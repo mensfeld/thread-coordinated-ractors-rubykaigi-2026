@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Thread-Coordinated Ractors: The Pattern That Delivers</title>
+  <link rel="stylesheet" href="assets/reset.min.css">
+  <link rel="stylesheet" href="assets/reveal.min.css">
+  <link rel="stylesheet" href="assets/white.min.css">
+  <link rel="stylesheet" href="assets/monokai.min.css">
+
+  <script src="assets/reveal.js"></script>
+  <script src="assets/notes.min.js"></script>
+  <script src="assets/highlight.min.js"></script>
+
+  <style>
+    body, .reveal {
+      background-color: #f5f2f0;
+      font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif;
+      font-weight: 400;
+    }
+
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+      text-transform: none;
+      color: #471712;
+      font-weight: 600;
+    }
+
+    .reveal pre {
+      margin: 15px 0;
+      width: 100%;
+      box-shadow: 0 0 6px rgba(0,0,0,0.15);
+    }
+
+    .reveal pre code {
+      max-height: 500px;
+      font-size: 1.05em;
+      line-height: 1.3;
+      padding: 12px;
+    }
+
+    .reveal section img {
+      margin: 15px 0;
+      background: rgba(255,255,255,0.12);
+      border: none;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+
+    .two-cols {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .col {
+      width: 48%;
+    }
+
+    .problem { color: #E33030; }
+    .solution { color: #893D24; }
+    .highlight { color: #471712; }
+    .secondary { color: #b0877f; }
+    .vibe { color: #E33030; }
+
+    .quote {
+      font-style: italic;
+      margin: 30px 0;
+      font-size: 1.2em;
+      color: #893D24;
+    }
+
+    .center-content { text-align: center; }
+
+    .animated-box {
+      border: 2px solid transparent;
+      padding: 10px;
+      border-radius: 5px;
+      transition: all 0.5s ease;
+    }
+
+    .animated-box.problem-box {
+      border-color: rgba(227, 48, 48, 0.5);
+      background-color: rgba(227, 48, 48, 0.05);
+    }
+
+    .animated-box.solution-box {
+      border-color: rgba(137, 61, 36, 0.5);
+      background-color: rgba(137, 61, 36, 0.05);
+    }
+
+    .animated-box.vibe-box {
+      border-color: rgba(227, 48, 48, 0.5);
+      background-color: rgba(227, 48, 48, 0.05);
+    }
+
+    .emoji { font-size: 2em; }
+
+    .big-number {
+      font-size: 3em;
+      font-weight: bold;
+      color: #471712;
+      margin: 20px 0;
+    }
+
+    .big-number.good { color: #893D24; }
+    .big-number.bad { color: #E33030; }
+
+    table.benchmark {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85em;
+      margin: 30px 0;
+    }
+
+    table.benchmark th {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid #471712;
+      font-weight: 600;
+    }
+
+    table.benchmark td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #DBB8B4;
+    }
+
+    table.benchmark .winner {
+      color: #893D24;
+      font-weight: bold;
+    }
+
+    table.benchmark .loser {
+      color: #E33030;
+    }
+
+    .chart-container {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .chart-container svg text {
+      font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif;
+    }
+
+    .caveat {
+      font-size: 0.7em;
+      color: #893D24;
+      margin-top: 10px;
+    }
+
+    /* ═══ Theme Toggle ═══ */
+    #theme-toggle {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 100;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      opacity: 0.3;
+      transition: opacity 0.3s;
+      padding: 4px;
+    }
+    #theme-toggle:hover { opacity: 1; }
+
+    /* ═══ Dark Theme ═══ */
+    [data-theme="dark"] body,
+    [data-theme="dark"] .reveal {
+      background-color: #1c1210;
+      color: #e8d5d0;
+    }
+
+    [data-theme="dark"] .reveal h1,
+    [data-theme="dark"] .reveal h2,
+    [data-theme="dark"] .reveal h3,
+    [data-theme="dark"] .reveal h4 {
+      color: #d4a49c;
+    }
+
+    [data-theme="dark"] .reveal p,
+    [data-theme="dark"] .reveal li,
+    [data-theme="dark"] .reveal td,
+    [data-theme="dark"] .reveal code {
+      color: #e8d5d0;
+    }
+
+    [data-theme="dark"] .reveal pre {
+      box-shadow: 0 0 6px rgba(0,0,0,0.5);
+    }
+
+    [data-theme="dark"] .reveal section img {
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    [data-theme="dark"] .problem { color: #ff6b6b; }
+    [data-theme="dark"] .solution { color: #d4734f; }
+    [data-theme="dark"] .highlight { color: #d4a49c; }
+    [data-theme="dark"] .secondary { color: #6b4a44; }
+    [data-theme="dark"] .vibe { color: #ff6b6b; }
+    [data-theme="dark"] .quote { color: #d4734f; }
+
+    [data-theme="dark"] .big-number { color: #d4a49c; }
+    [data-theme="dark"] .big-number.good { color: #d4734f; }
+    [data-theme="dark"] .big-number.bad { color: #ff6b6b; }
+
+    [data-theme="dark"] table.benchmark th {
+      border-bottom-color: #6b4a44;
+      color: #d4a49c;
+    }
+
+    [data-theme="dark"] table.benchmark td {
+      border-bottom-color: #3a2520;
+    }
+
+    [data-theme="dark"] table.benchmark .winner { color: #d4734f; }
+    [data-theme="dark"] table.benchmark .loser { color: #ff6b6b; }
+
+    [data-theme="dark"] .caveat { color: #d4734f; }
+
+    [data-theme="dark"] .animated-box.problem-box {
+      border-color: rgba(255,107,107,0.5);
+      background-color: rgba(255,107,107,0.08);
+    }
+
+    [data-theme="dark"] .animated-box.solution-box {
+      border-color: rgba(212,115,79,0.5);
+      background-color: rgba(212,115,79,0.08);
+    }
+
+    [data-theme="dark"] .animated-box.vibe-box {
+      border-color: rgba(255,107,107,0.5);
+      background-color: rgba(255,107,107,0.08);
+    }
+
+    [data-theme="dark"] .chart-container svg {
+      filter: brightness(2.5) saturate(0.7) contrast(0.85);
+    }
+
+    [data-theme="dark"] .reveal .slides section .fragment.visible {
+      color: #e8d5d0;
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<!-- ═══════════════════════════════════════════════════════
+     ACT 1 - THE HOOK (~6 min)
+     ═══════════════════════════════════════════════════════ -->
+
+<section data-transition="fade-in">
+  <h2>Thread-Coordinated Ractors</h2>
+  <p style="font-size: 0.8em; margin-top: 10px;">The Pattern That Delivers</p>
+  <p style="margin-top: 5%">Maciej Mensfeld</p>
+  <p class="secondary">RubyKaigi 2026</p>
+
+  <aside class="notes">
+    Welcome everyone. Today I want to show you a pattern I have been refining for over a year - using Ractors for real, production parallelism in Ruby. The key idea is coordinating them with a thread, not trying to make your whole app Ractor-safe.
+    The word "delivers" in the title is intentional. Most Ractor talks end with "promising, but not yet." This one ends with shipping code and real benchmark numbers.
+    This is not a Ractor tutorial - I will assume you roughly know what they are.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Maciej Mensfeld</h3>
+  <p>Karafka, Shoryuken, PGMQ-Ruby, COI (AI Sandbox)</p>
+  <p>RubyGems Security Team</p>
+  <p>Mend.io</p>
+  <p style="margin-top: 15px;" class="secondary">@maciejmensfeld</p>
+
+  <aside class="notes">
+    Quick intro - I work at Mend.io and I build background processing tools for Ruby. Karafka for Kafka, Shoryuken for SQS, PGMQ-Ruby for Postgres queues, and COI which is an AI sandbox for containerized development. I am also part of the RubyGems security team.
+  </aside>
+</section>
+
+<section>
+  <h3>A Long Wait</h3>
+  <p>Waiting for Ractors since they were called <span class="highlight">Guilds</span>.</p>
+
+  <aside class="notes">
+    I have been waiting for Ractors since Koichi proposed Guilds back in 2016. I was excited then and I am still excited now.
+    It makes me genuinely happy to be standing here in Japan talking about them - not as a future feature, but as something I have actually shipped.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Today's Plan</h3>
+  <ul>
+    <li>The Problem - why Ractors?</li>
+    <li>The Investigation - what works, what doesn't</li>
+    <li>Patterns - building the Ractor pool</li>
+    <li>Production - benchmarks, limits, takeaways</li>
+  </ul>
+
+  <aside class="notes">
+    Here is what we will cover today. Four parts, roughly seven minutes each. We will start with the problem, then investigate what works and what does not, look at the patterns I built, and finish with production results and takeaways.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>10+ Years of Background Processing</h3>
+  <p>Fibers. Threads. Processes.</p>
+  <p class="fragment fade-in" style="margin-top: 20px;">All useful. <span class="problem">None of them parallelize CPU-bound work in a single process.</span></p>
+
+  <aside class="notes">
+    I have spent over a decade building background processing engines and I have used every Ruby concurrency primitive in production.
+    Fibers are great for cooperative I/O. Threads work well for blocking I/O. Forks distribute load but each process stays single-threaded.
+    The gap is CPU-bound work - parsing, validation, transformation. Threads cannot parallelize it because of the GVL, and forks do not speed up a single process. That gap is what brought me here.
+  </aside>
+</section>
+
+<section>
+  <h3>I Hit This Wall in Karafka</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 720 160" style="width: 100%; max-width: 720px;">
+      <!-- Box 1: Raw bytes -->
+      <rect x="5" y="20" width="130" height="70" rx="10" fill="#DBB8B4" opacity="0.35" stroke="#893D24" stroke-width="2"/>
+      <text x="70" y="62" text-anchor="middle" font-size="16" fill="#471712" font-weight="600">Raw bytes</text>
+
+      <!-- Arrow 1 -->
+      <line x1="135" y1="55" x2="168" y2="55" stroke="#893D24" stroke-width="2.5" marker-end="url(#flowArrow)"/>
+
+      <!-- Box 2: Deserialize (highlighted) -->
+      <rect x="168" y="20" width="175" height="70" rx="10" fill="#E33030" opacity="0.2" stroke="#E33030" stroke-width="3"/>
+      <text x="255" y="62" text-anchor="middle" font-size="16" fill="#E33030" font-weight="700">Deserialize</text>
+      <text x="255" y="120" text-anchor="middle" font-size="13" fill="#E33030" font-style="italic">10,000 messages</text>
+
+      <!-- Arrow 2 -->
+      <line x1="343" y1="55" x2="376" y2="55" stroke="#893D24" stroke-width="2.5" marker-end="url(#flowArrow)"/>
+
+      <!-- Box 3: Filter -->
+      <rect x="376" y="20" width="110" height="70" rx="10" fill="#DBB8B4" opacity="0.35" stroke="#893D24" stroke-width="2"/>
+      <text x="431" y="62" text-anchor="middle" font-size="16" fill="#471712" font-weight="600">Filter</text>
+      <text x="431" y="120" text-anchor="middle" font-size="13" fill="#893D24" font-style="italic">keep 50</text>
+
+      <!-- Arrow 3 -->
+      <line x1="486" y1="55" x2="519" y2="55" stroke="#893D24" stroke-width="2.5" marker-end="url(#flowArrow)"/>
+
+      <!-- Box 4: Business logic -->
+      <rect x="519" y="20" width="195" height="70" rx="10" fill="#DBB8B4" opacity="0.35" stroke="#893D24" stroke-width="2"/>
+      <text x="616" y="62" text-anchor="middle" font-size="16" fill="#471712" font-weight="600">Business logic</text>
+      <text x="616" y="120" text-anchor="middle" font-size="13" fill="#893D24" font-style="italic">50 messages</text>
+
+      <defs>
+        <marker id="flowArrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#893D24"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <p class="fragment fade-in secondary" style="margin-top: 10px;">Deserialization runs on <em>every</em> message. Business logic runs on a fraction.</p>
+
+  <aside class="notes">
+    Karafka is a Kafka processing framework for Ruby and Rails - think Sidekiq, but for Kafka.
+    Look at this pipeline. 10,000 messages hit the deserializer, then the filter drops that to just 50, and business logic only runs on those 50.
+    So you are spending 99 percent of your CPU on data you will throw away. That is why deserialization is the natural target for parallelization.
+  </aside>
+</section>
+
+<section>
+  <h3>Where Does Time Actually Go?</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 720 230" style="width: 100%; max-width: 720px;">
+      <!-- Labels -->
+      <text x="155" y="28" text-anchor="end" font-size="13" fill="#471712">Msg building</text>
+      <text x="155" y="60" text-anchor="end" font-size="13" fill="#471712">Filtering</text>
+      <text x="155" y="92" text-anchor="end" font-size="13" fill="#471712">Deserialization</text>
+      <text x="155" y="124" text-anchor="end" font-size="13" fill="#471712">Validation</text>
+      <text x="155" y="156" text-anchor="end" font-size="13" fill="#471712">User consume</text>
+      <text x="155" y="188" text-anchor="end" font-size="13" fill="#471712">Offset mgmt</text>
+
+      <!-- Bars (max width 500 = 100%) -->
+      <rect x="165" y="15" width="28" height="20" rx="2" fill="#471712"/>
+      <text x="198" y="29" font-size="11" fill="#471712">5.7%</text>
+
+      <rect x="165" y="47" width="5" height="20" rx="2" fill="#471712"/>
+      <text x="175" y="61" font-size="11" fill="#471712">1.0%</text>
+
+      <rect x="165" y="79" width="430" height="20" rx="2" fill="#E33030"/>
+      <text x="600" y="93" font-size="13" fill="#E33030" font-weight="bold">86.0%</text>
+
+      <rect x="165" y="111" width="18" height="20" rx="2" fill="#471712"/>
+      <text x="188" y="125" font-size="11" fill="#471712">3.5%</text>
+
+      <rect x="165" y="143" width="6" height="20" rx="2" fill="#471712"/>
+      <text x="176" y="157" font-size="11" fill="#471712">1.1%</text>
+
+      <rect x="165" y="175" width="13" height="20" rx="2" fill="#471712"/>
+      <text x="183" y="189" font-size="11" fill="#471712">2.6%</text>
+
+      <!-- Caveat -->
+      <text x="360" y="220" text-anchor="middle" font-size="11" fill="#893D24" font-style="italic">CPU-only pipeline. No DB calls, no network I/O.</text>
+    </svg>
+  </div>
+
+  <aside class="notes">
+    I profiled a real Karafka pipeline with a 5KB JSON payload, and this is where the time actually goes.
+    86 percent is in deserialization. Everything else combined - message construction, filtering, validation, user code, offset management - is only 14 percent.
+    Important caveat - this is a CPU-only pipeline. If your consumer hits a database, these proportions change dramatically. We will come back to that.
+    But the point is - deserialization is not just a part of the work. It IS the work.
+  </aside>
+</section>
+
+<section>
+  <h3>Bigger Payloads = More Time in Deserialization</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 560 280" style="width: 100%; max-width: 560px;">
+      <!-- Y axis -->
+      <line x1="70" y1="30" x2="70" y2="220" stroke="#DBB8B4" stroke-width="1"/>
+      <!-- X axis -->
+      <line x1="70" y1="220" x2="520" y2="220" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels (0-100%) -->
+      <text x="65" y="224" text-anchor="end" font-size="11" fill="#893D24">0%</text>
+      <text x="65" y="177" text-anchor="end" font-size="11" fill="#893D24">25%</text>
+      <text x="65" y="130" text-anchor="end" font-size="11" fill="#893D24">50%</text>
+      <text x="65" y="83" text-anchor="end" font-size="11" fill="#893D24">75%</text>
+      <text x="65" y="36" text-anchor="end" font-size="11" fill="#893D24">100%</text>
+
+      <!-- Grid lines -->
+      <line x1="70" y1="173" x2="520" y2="173" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="70" y1="126" x2="520" y2="126" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="70" y1="79" x2="520" y2="79" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="70" y1="32" x2="520" y2="32" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- Bars -->
+      <rect x="105" y="140" width="80" height="80" rx="3" fill="#DBB8B4"/>
+      <text x="145" y="134" text-anchor="middle" font-size="13" fill="#DBB8B4" font-weight="bold">42%</text>
+
+      <rect x="210" y="57" width="80" height="163" rx="3" fill="#E33030"/>
+      <text x="250" y="50" text-anchor="middle" font-size="13" fill="#E33030" font-weight="bold">86%</text>
+
+      <rect x="315" y="39" width="80" height="181" rx="3" fill="#E33030"/>
+      <text x="355" y="33" text-anchor="middle" font-size="13" fill="#E33030" font-weight="bold">95%</text>
+
+      <rect x="420" y="32" width="80" height="188" rx="3" fill="#E33030"/>
+      <text x="460" y="26" text-anchor="middle" font-size="13" fill="#E33030" font-weight="bold">99%</text>
+
+      <!-- X axis labels -->
+      <text x="145" y="240" text-anchor="middle" font-size="12" fill="#471712">524B</text>
+      <text x="250" y="240" text-anchor="middle" font-size="12" fill="#471712">5.1KB</text>
+      <text x="355" y="240" text-anchor="middle" font-size="12" fill="#471712">18.8KB</text>
+      <text x="460" y="240" text-anchor="middle" font-size="12" fill="#471712">78KB</text>
+
+      <!-- Caveat -->
+      <text x="295" y="268" text-anchor="middle" font-size="10" fill="#893D24" font-style="italic">CPU-only pipeline. When your consumer hits a DB for 100ms, deserialization drops to &lt;2%.</text>
+    </svg>
+  </div>
+
+  <aside class="notes">
+    Same chart but with four payload sizes. As you can see, as payloads grow, deserialization eats everything.
+    Again, this is for CPU-bound consumers. If yours waits on a database, the proportions look different.
+  </aside>
+</section>
+
+<section>
+  <p>If I can speed up deserialization...</p>
+  <p class="fragment fade-in">...I speed up <em>everything</em>.</p>
+
+  <aside class="notes">
+    When one stage is 86 to 99 percent of the cost, optimizing it is the same as optimizing the whole pipeline.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>I've Tried Everything</h3>
+  <ul>
+    <li><strong>Threads</strong> - useless for CPU</li>
+    <li><strong>Async</strong> - useless for parsing</li>
+    <li><strong>Forking</strong> - per-process throughput unchanged</li>
+  </ul>
+  <p class="secondary" style="margin-top: 20px;">The GVL blocks parallelism for pure-Ruby CPU work.</p>
+
+  <aside class="notes">
+    I have tried every Ruby tool over the years for this exact problem.
+    Threads are fine for I/O, but parsing JSON is pure-Ruby CPU work - they queue up on the GVL and you get zero parallelism.
+    Async solves a different problem - non-blocking I/O. It does not help with CPU work.
+    Forking scales horizontally but does nothing for the CPU profile of a single process.
+    I needed something that bypasses the GVL entirely while staying inside one Ruby process.
+  </aside>
+</section>
+
+<section>
+  <h3>Ractors</h3>
+  <img src="assets/look.jpeg" alt="Look at me, I'm the thread now" style="max-width: 40%; background: none; border: none; box-shadow: none;">
+  <p style="margin-top: 10px;">Each Ractor has its own GVL. <span class="solution">True parallel execution.</span></p>
+
+  <aside class="notes">
+    Ractors are Ruby's answer to the GVL problem. Each Ractor gets its own GVL, so multiple Ractors really do run pure-Ruby code in parallel on multiple cores.
+    The catch - and this is the whole reason Ractors have not taken off - is that everything crossing a Ractor boundary has to be shareable. Frozen, immutable, or explicitly moved.
+    Ractors look like threads, but the rules are completely different.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>It's Not That Simple</h3>
+  <ul>
+    <li>You need the <span class="highlight">right use-case</span></li>
+    <li class="fragment fade-in">You need the <span class="highlight">right data shape</span></li>
+    <li class="fragment fade-in">You need to account for framework overhead</li>
+    <li class="fragment fade-in">You need <span class="highlight">realistic expectations</span></li>
+  </ul>
+  <p class="fragment fade-in secondary" style="margin-top: 20px;">Making Ractors deliver is an engineering challenge, not a flag you flip.</p>
+
+  <aside class="notes">
+    But making Ractors work in practice is genuinely complex. You need the right use-case, the right data shape, and realistic expectations - we are talking 2 to 3x on the right workload, not magic 10x.
+    Framework overhead is real. Coordination, allocations, boundary crossings - they all eat into your gains.
+    In this talk I will show you the failures honestly alongside the wins.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>A Library Author's Perspective</h3>
+  <p>I build <span class="highlight">middleman layers</span> - between infrastructure and your code.</p>
+  <p class="fragment fade-in" style="margin-top: 15px;">I control the <em>plumbing</em>, not the business logic.</p>
+  <p class="fragment fade-in" style="margin-top: 15px;">I can't tell users to switch runtimes, gems, or architectures.</p>
+  <p class="fragment fade-in secondary" style="margin-top: 15px;">~95% run CRuby. I have to solve it <em>here</em>.</p>
+
+  <aside class="notes">
+    I want to be clear about my perspective here. I am not looking at Ractors from a Ruby core team angle. I am a library author. My view is utilitarian - I need them to solve a real problem for real users, today.
+    I build Karafka - it is middleware between raw Kafka bytes and your code. I can isolate pipeline stages without touching user code at all.
+    But I cannot demand architectural changes. "Just use JRuby" is an evacuation plan, not a solution.
+    About 95 percent of my users run CRuby. I have to solve it within their constraints.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>The Unlock</h3>
+  <ul>
+    <li><span class="problem">We can't assume</span> user code is Ractor-safe</li>
+    <li class="fragment fade-in">We <span class="problem">can't require</span> them to make it so</li>
+    <li class="fragment fade-in">Library authors <em>can</em> isolate <span class="solution">pure input/output</span> operations</li>
+  </ul>
+  <p class="fragment fade-in" style="font-size: 1.3em; margin-top: 30px;"><strong>You don't need a Ractor-safe app.<br/>You need Ractor-safe <em>building blocks</em>.</strong></p>
+
+  <aside class="notes">
+    This is the key idea of the whole talk. If you remember one slide, let it be this one.
+    Almost no user code is Ractor-safe today. We cannot force people to rewrite their apps. But as library authors, we can find isolated operations - pure input, pure output, no shared state - and run those in Ractors.
+    You do not need a Ractor-safe app. You need Ractor-safe building blocks.
+    Deserialization is the perfect candidate - bytes in, parsed object out, no global state.
+  </aside>
+</section>
+
+<section data-transition="fade">
+  <p class="quote">"Ractors are slow. Everyone knows that."</p>
+
+  <aside class="notes">
+    This is the conventional wisdom. And it is exactly what this talk is going to dismantle. Let that sit for a moment.
+  </aside>
+</section>
+
+<section>
+  <img src="assets/claude-code-ractors.png" alt="Claude Code says Ractors won't work with Karafka" style="max-width: 85%; border-radius: 8px; box-shadow: none; background: none;">
+
+  <aside class="notes">
+    This is a real screenshot from Claude Code. Even the AI confidently told me - no, Ractors will not work well with Karafka.
+    Well... let us see about that.
+  </aside>
+</section>
+
+<section>
+  <p class="big-number bad">3x slower</p>
+  <p>JSON parsing with Ractors was <span class="problem">painfully slow</span></p>
+
+  <aside class="notes">
+    A year ago, if you tried the obvious thing - parse JSON in a Ractor, send the result back - you got code that was three times slower than just doing it on one thread.
+    Three times slower, with all the added complexity of Ractor coordination. No wonder nobody used them.
+  </aside>
+</section>
+
+<section data-transition="fade">
+  <h2>Bug #19288</h2>
+  <p>I reported that bug myself.</p>
+
+  <aside class="notes">
+    Bug 19288 on the Ruby tracker - I filed it myself. It documented exactly the slowdown I just described.
+    I was not quiet about it. I posted on social media, I brought it up everywhere. I had been waiting for Ractors for a decade and the first real test failed.
+    But complaining productively, with reproducible benchmarks, is how the language gets better.
+  </aside>
+</section>
+
+<section>
+  <h2>RubyKaigi 2025</h2>
+  <p>I talked with the core team about Ractor pain points</p>
+  <p class="fragment fade-in">And then they went and <span class="solution">fixed things</span></p>
+
+  <aside class="notes">
+    Last year at RubyKaigi I had hallway conversations with Aaron Patterson, Koichi Sasada, Jean Boussier, and others about Ractor pain points.
+    I expected the usual "interesting, we will think about it." Instead, in the months that followed, several of those exact pain points got addressed in the language.
+    This is the part of Ruby I love - community feedback going straight into the runtime.
+  </aside>
+</section>
+
+<section data-transition="fade" style="font-size: 80%">
+  <h2>What Changed in 2025</h2>
+  <p style="margin-bottom: 15px;">A year of serious investment into Ractors:</p>
+  <ul>
+    <li class="fragment fade-in">Ractors no longer <span class="solution">crash the VM</span></li>
+    <li class="fragment fade-in"><code>Ractor::Port</code> - targeted messaging</li>
+    <li class="fragment fade-in"><code>move: true</code> - zero-copy transfer</li>
+    <li class="fragment fade-in"><code>JSON.parse(..., freeze: true)</code> - no longer crashes in Ractors</li>
+  </ul>
+  <p class="fragment fade-in secondary" style="margin-top: 15px;">And more. Time to try again.</p>
+
+  <aside class="notes">
+    These are the key changes that made the pattern in this talk possible.
+    Ractor::Port gives us targeted messaging. Before, Ractor.receive was a broadcast. Port lets you address a specific receiver, which is what you need to coordinate a worker pool.
+    move: true gives us zero-copy ownership transfer. Instead of deep-copying, you just transfer ownership.
+    And freeze: true on JSON.parse - this option has existed since Ruby 3.0, but it used to crash when used inside Ractors. Now it works reliably. Parsed objects come out already Ractor-shareable. We will dig into why this is huge in a few slides.
+    With these three changes, I was finally ready to try again.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     ACT 2 - THE INVESTIGATION (~9 min)
+     ═══════════════════════════════════════════════════════ -->
+
+<section data-transition="convex">
+  <h2>The Investigation</h2>
+
+  <aside class="notes">
+    Now we shift from "why bother" to "how I actually made it work." This is the longest section - the meat of the talk.
+    I will walk through the failed attempts honestly, because the failures explain why the final pattern looks the way it does.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h2>Attempt 1: Naive Deep Copy</h2>
+  <pre><code class="ruby">result = Ractor.new(payload) { |p| JSON.parse(p) }.take</code></pre>
+  <p>Parse JSON in Ractors, send results back</p>
+
+  <aside class="notes">
+    The most obvious approach - spawn a Ractor, parse JSON inside, take the result back.
+    The problem is that the parsed Hash is not shareable, so .take deep-copies the entire object graph. Thousands of cloned objects per message. The copy cost eats the parallelism gain completely.
+    This is the version that gives Ractors their bad reputation.
+  </aside>
+</section>
+
+<section>
+  <p class="big-number bad">0.29x</p>
+  <p>3.4x <em>slower</em> than sequential. Ouch.</p>
+
+  <aside class="notes">
+    0.29x. Three and a half times slower than just doing it on one thread. This is exactly the result that bug 19288 documented. It is not subtle - it is a face-plant.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h2>Attempt 2: <code>make_shareable</code></h2>
+  <pre><code class="ruby">results = payloads.map { |p| JSON.parse(p) }
+Ractor.make_shareable(results)</code></pre>
+  <p>Deep-freeze everything so it can be shared</p>
+
+  <aside class="notes">
+    Second attempt - parse normally, then deep-freeze the result with Ractor.make_shareable. Frozen things are shareable, so this should avoid the deep-copy problem.
+    But make_shareable still has to traverse the whole object graph - every Hash, every Array, every String - and freeze each one. You have replaced one full traversal with another.
+    It is faster than deep copy, but you are still paying a Ruby-level walk over every object you just created in C.
+  </aside>
+</section>
+
+<section>
+  <p class="big-number bad">0.42x</p>
+  <p>Still slower than sequential.</p>
+
+  <aside class="notes">
+    0.42x. Better than 0.29x, but still slower than sequential. Two attempts, two failures.
+    But the pattern starts to emerge - the parse itself is not the bottleneck. Moving data across the Ractor boundary is.
+  </aside>
+</section>
+
+<section data-transition="fade">
+  <p><code>JSON.parse</code> is a <span class="highlight">C extension</span>.</p>
+  <p class="fragment fade-in">What if it could <span class="solution">freeze objects while creating them</span>?</p>
+
+  <aside class="notes">
+    So here is the key insight. JSON.parse is a C extension. It is already allocating every Hash, Array, and String during the parse. It already touches every object exactly once.
+    What if freezing happened during that single C-level pass? Then there would be no second Ruby-level traversal. You get shareability for free.
+    This is the insight that drove the JSON change.
+  </aside>
+</section>
+
+<section data-transition="zoom">
+  <h2>The Breakthrough</h2>
+  <pre><code class="ruby">JSON.parse(payload, freeze: true)</code></pre>
+  <p>Returns objects that are <span class="solution">already Ractor-shareable</span></p>
+
+  <aside class="notes">
+    The freeze: true option has been in the JSON gem since Ruby 3.0, but the breakthrough is realizing what it gives us for Ractors. It freezes every object as it is allocated, in C, during the parse. That means the result is immediately Ractor-shareable - no Ruby-level traversal needed.
+    The cost is 1 to 15 percent more parse time depending on payload shape. But that small cost unlocked the entire pattern I am about to show you.
+  </aside>
+</section>
+
+<section>
+  <h3>Transfer Strategy Comparison (65KB payload)</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 520 300" style="width: 100%; max-width: 520px;">
+      <!-- Y axis -->
+      <line x1="60" y1="40" x2="60" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+      <!-- X axis -->
+      <line x1="60" y1="260" x2="480" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels -->
+      <text x="55" y="264" text-anchor="end" font-size="11" fill="#893D24">0x</text>
+      <text x="55" y="172" text-anchor="end" font-size="11" fill="#893D24">1.0x</text>
+      <text x="55" y="84" text-anchor="end" font-size="11" fill="#893D24">2.0x</text>
+
+      <!-- 1.0x reference line -->
+      <line x1="60" y1="172" x2="480" y2="172" stroke="#DBB8B4" stroke-width="1" stroke-dasharray="5,5"/>
+      <text x="485" y="176" font-size="10" fill="#DBB8B4">sequential</text>
+
+      <!-- Grid lines -->
+      <line x1="60" y1="128" x2="480" y2="128" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="216" x2="480" y2="216" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- Bars: scale 0-2.5x over 220px, y = 260 - (val/2.5*220) -->
+      <!-- Deep copy: 0.29x → h=25.5, y=234.5 -->
+      <rect x="100" y="234" width="90" height="26" rx="3" fill="#E33030"/>
+      <text x="145" y="228" text-anchor="middle" font-size="14" fill="#E33030" font-weight="bold">0.29x</text>
+
+      <!-- make_shareable: 0.42x → h=37, y=223 -->
+      <rect x="235" y="223" width="90" height="37" rx="3" fill="#DBB8B4"/>
+      <text x="280" y="217" text-anchor="middle" font-size="14" fill="#DBB8B4" font-weight="bold">0.42x</text>
+
+      <!-- freeze: true: 2.3x → h=202, y=58 -->
+      <rect x="370" y="58" width="90" height="202" rx="3" fill="#893D24"/>
+      <text x="415" y="50" text-anchor="middle" font-size="14" fill="#893D24" font-weight="bold">2.3x</text>
+
+      <!-- X axis labels -->
+      <text x="145" y="280" text-anchor="middle" font-size="12" fill="#471712">Deep copy</text>
+      <text x="280" y="280" text-anchor="middle" font-size="12" fill="#471712">make_shareable</text>
+      <text x="415" y="280" text-anchor="middle" font-size="12" fill="#471712">freeze: true</text>
+    </svg>
+  </div>
+
+  <aside class="notes">
+    Three transfer strategies, same Ractors, same workload, same payload.
+    Deep copy: 0.29x - the catastrophe. make_shareable: 0.42x - slightly less catastrophic. freeze: true: 2.3x - actual parallelism, finally.
+    The whole difference between "Ractors are slow" and "Ractors deliver" is the strategy you use to cross the boundary. Same primitive, completely different outcome.
+  </aside>
+</section>
+
+<section>
+  <p class="big-number good">2.3x</p>
+  <p>From <span class="problem">0.29x</span> to <span class="solution">2.3x</span>. Same Ractors. <strong>One flag.</strong></p>
+
+  <aside class="notes">
+    One keyword argument took us from 3.4x slower to 2.3x faster. Same hardware, same Ractors, same workload. Just a different way of crossing the boundary.
+  </aside>
+</section>
+
+<section>
+  <h3>Frozen Input = Zero-Copy In</h3>
+  <ul>
+    <li><code>payload.freeze</code> at the source</li>
+    <li>Frozen strings are <span class="solution">Ractor-shareable</span> for free</li>
+  </ul>
+  <p class="secondary" style="margin-top: 20px;">Frozen in, <code>freeze: true</code> out. Zero-copy both ways.</p>
+
+  <aside class="notes">
+    Now the input side. Kafka payloads are byte strings - read-only by nature. payload.freeze makes them Ractor-shareable for free. No copy, no move needed.
+    Combine the two - frozen input goes in, freeze: true output comes back. Zero-copy in both directions. This is where the whole pattern clicks together.
+  </aside>
+</section>
+
+<section data-transition="fade">
+  <h2>But Which Ractor Pattern?</h2>
+  <p>There's more than one way to coordinate Ractors</p>
+
+  <aside class="notes">
+    Now we know how to move data efficiently. But "use Ractors" is not a single design - there are several plausible coordination patterns. I tested four, and the next slides show you the data that picked the winner.
+  </aside>
+</section>
+
+<section style="font-size: 70%">
+  <h3>4 Patterns Tested</h3>
+  <table class="benchmark">
+    <tr><th>Pattern</th><th>How it works</th></tr>
+    <tr><td><strong>A) Thread-Coordinated</strong></td><td>Readiness signaling, Mutex dispatch</td></tr>
+    <tr><td>B) Pre-Partitioned</td><td>Blast-send N chunks, no protocol</td></tr>
+    <tr><td>C) Ephemeral</td><td>Fresh Ractors per batch</td></tr>
+    <tr><td>D) Ractor Supervisor</td><td>Coordinator Ractor in the middle</td></tr>
+  </table>
+
+  <aside class="notes">
+    Let me quickly walk you through the four patterns I tested.
+    Thread-Coordinated - what I ended up shipping. A regular Ruby thread waits for both a ready Ractor and available work, then matches them up.
+    Pre-Partitioned - split the batch into N chunks, send each to a fixed Ractor, no runtime coordination. Simple and fast in the easy case.
+    Ephemeral - spawn a fresh Ractor for each batch. Easiest mental model, worst startup cost.
+    Ractor Supervisor - same as A but the coordinator is itself a Ractor instead of a thread. Adds one extra boundary crossing.
+    Spoiler - A wins, and the why is the rest of this section.
+  </aside>
+</section>
+
+<section>
+  <h3>Single Producer Results</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 580 335" style="width: 100%; max-width: 580px;">
+      <!-- Axes -->
+      <line x1="60" y1="40" x2="60" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+      <line x1="60" y1="260" x2="550" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels - scale 0-2.5x -->
+      <text x="55" y="264" text-anchor="end" font-size="11" fill="#893D24">0x</text>
+      <text x="55" y="172" text-anchor="end" font-size="11" fill="#893D24">1.0x</text>
+      <text x="55" y="84" text-anchor="end" font-size="11" fill="#893D24">2.0x</text>
+
+      <!-- 1.0x reference line -->
+      <line x1="60" y1="172" x2="550" y2="172" stroke="#DBB8B4" stroke-width="1" stroke-dasharray="5,5"/>
+
+      <!-- Grid -->
+      <line x1="60" y1="128" x2="550" y2="128" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="216" x2="550" y2="216" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- y = 260 - (val/2.5 * 220) -->
+      <!-- 4 groups by pattern, 4 bars each (524B, 5.1KB, 18.8KB, 78KB) -->
+      <!-- Bar width=22, gap=2, group width=4*22+3*2=94, centers at 120, 240, 360, 480 -->
+
+      <!-- A) Thread-Coordinated: 2.04, 1.51, 1.24, 1.39 -->
+      <rect x="73" y="80" width="22" height="180" rx="2" fill="#471712" opacity="0.4"/>
+      <rect x="97" y="127" width="22" height="133" rx="2" fill="#471712" opacity="0.6"/>
+      <rect x="121" y="151" width="22" height="109" rx="2" fill="#471712" opacity="0.8"/>
+      <rect x="145" y="138" width="22" height="122" rx="2" fill="#471712"/>
+      <text x="120" y="73" text-anchor="middle" font-size="10" fill="#471712" font-weight="bold">1.5x avg</text>
+      <text x="120" y="280" text-anchor="middle" font-size="10" fill="#471712">Thread-Coord</text>
+
+      <!-- B) Pre-Partitioned: 1.94, 2.33, 1.11, 0.95 -->
+      <rect x="193" y="89" width="22" height="171" rx="2" fill="#893D24" opacity="0.4"/>
+      <rect x="217" y="55" width="22" height="205" rx="2" fill="#893D24" opacity="0.6"/>
+      <rect x="241" y="163" width="22" height="97" rx="2" fill="#893D24" opacity="0.8"/>
+      <rect x="265" y="176" width="22" height="84" rx="2" fill="#893D24"/>
+      <text x="240" y="48" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">1.6x avg</text>
+      <text x="240" y="280" text-anchor="middle" font-size="10" fill="#471712">Pre-Partitioned</text>
+
+      <!-- C) Ephemeral: 0.88, 2.66, 1.45, 1.52 -->
+      <rect x="313" y="183" width="22" height="77" rx="2" fill="#E33030" opacity="0.4"/>
+      <rect x="337" y="26" width="22" height="234" rx="2" fill="#E33030" opacity="0.6"/>
+      <rect x="361" y="132" width="22" height="128" rx="2" fill="#E33030" opacity="0.8"/>
+      <rect x="385" y="126" width="22" height="134" rx="2" fill="#E33030"/>
+      <text x="360" y="20" text-anchor="middle" font-size="10" fill="#E33030" font-weight="bold">1.6x avg</text>
+      <text x="360" y="280" text-anchor="middle" font-size="10" fill="#471712">Ephemeral</text>
+
+      <!-- D) Ractor Supervisor: 1.57, 2.09, 1.45, 1.25 -->
+      <rect x="433" y="122" width="22" height="138" rx="2" fill="#DBB8B4" opacity="0.4"/>
+      <rect x="457" y="76" width="22" height="184" rx="2" fill="#DBB8B4" opacity="0.6"/>
+      <rect x="481" y="132" width="22" height="128" rx="2" fill="#DBB8B4" opacity="0.8"/>
+      <rect x="505" y="150" width="22" height="110" rx="2" fill="#DBB8B4"/>
+      <text x="480" y="69" text-anchor="middle" font-size="10" fill="#DBB8B4" font-weight="bold">1.6x avg</text>
+      <text x="480" y="280" text-anchor="middle" font-size="10" fill="#471712">Ractor Sup.</text>
+
+      <!-- Legend for payload sizes (opacity matches bars) -->
+      <rect x="170" y="298" width="10" height="10" rx="1" fill="#471712" opacity="0.4"/>
+      <text x="185" y="307" font-size="9" fill="#471712">524B</text>
+      <rect x="240" y="298" width="10" height="10" rx="1" fill="#471712" opacity="0.6"/>
+      <text x="255" y="307" font-size="9" fill="#471712">5.1KB</text>
+      <rect x="310" y="298" width="10" height="10" rx="1" fill="#471712" opacity="0.8"/>
+      <text x="325" y="307" font-size="9" fill="#471712">18.8KB</text>
+      <rect x="385" y="298" width="10" height="10" rx="1" fill="#471712"/>
+      <text x="400" y="307" font-size="9" fill="#471712">78KB</text>
+
+    </svg>
+  </div>
+  <p class="secondary">All patterns win. But which one handles <span class="problem">contention</span>?</p>
+
+  <aside class="notes">
+    With a single producer feeding the pool, all four patterns clear the 1.0x bar. Average speedups are in the 1.5 to 1.6x range.
+    If this were the only benchmark, you could pick any of them. But single-producer is the easy case - it hides the failure modes.
+    The real question is - what happens when multiple consumers share the pool?
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Narrowing Down</h3>
+  <ul>
+    <li><strong>Ephemeral</strong> - <span class="problem">0.88x on small payloads</span></li>
+    <li><strong>Ractor Supervisor</strong> - <span class="problem">10% overhead on large payloads</span></li>
+  </ul>
+  <p class="secondary" style="margin-top: 20px;">Two remain: <strong>Thread-Coordinated</strong> vs <strong>Pre-Partitioned</strong></p>
+
+  <aside class="notes">
+    Two patterns drop out before we even get to contention.
+    Ephemeral pays Ractor creation cost on every batch. Spawning a Ractor is not free - it takes tens of milliseconds. On small payloads that cost dominates.
+    Ractor Supervisor adds an extra boundary crossing because the coordinator is itself a Ractor. On large payloads you eat about 10 percent overhead.
+    That leaves two contenders - Thread-Coordinated and Pre-Partitioned.
+  </aside>
+</section>
+
+<section>
+  <h3>In Production, It's Never Just One</h3>
+  <p>Multiple consumers share a single Ractor pool</p>
+  <p class="fragment fade-in secondary" style="margin-top: 20px;">Single-producer benchmarks hide this. Production doesn't.</p>
+
+  <aside class="notes">
+    In Karafka, you have many topics, many partitions, many consumers - all running in the same process. They all want to deserialize messages. They share a single pool.
+    When all the workers are busy, the next caller waits. That waiting is contention. Microbenchmarks hide this. Production does not.
+  </aside>
+</section>
+
+<section>
+  <h3>Under Contention</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 520 320" style="width: 100%; max-width: 520px;">
+      <!-- Axes -->
+      <line x1="60" y1="40" x2="60" y2="280" stroke="#DBB8B4" stroke-width="1"/>
+      <line x1="60" y1="280" x2="470" y2="280" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels (K msgs/s) -->
+      <text x="55" y="284" text-anchor="end" font-size="11" fill="#893D24">0</text>
+      <text x="55" y="220" text-anchor="end" font-size="11" fill="#893D24">30K</text>
+      <text x="55" y="160" text-anchor="end" font-size="11" fill="#893D24">60K</text>
+      <text x="55" y="100" text-anchor="end" font-size="11" fill="#893D24">90K</text>
+      <text x="55" y="52" text-anchor="end" font-size="11" fill="#893D24">110K</text>
+      <text x="10" y="160" text-anchor="middle" font-size="11" fill="#893D24" transform="rotate(-90 10 160)">msgs/s</text>
+
+      <!-- X axis labels -->
+      <text x="110" y="300" text-anchor="middle" font-size="12" fill="#471712">1</text>
+      <text x="230" y="300" text-anchor="middle" font-size="12" fill="#471712">3</text>
+      <text x="350" y="300" text-anchor="middle" font-size="12" fill="#471712">5</text>
+      <text x="460" y="300" text-anchor="middle" font-size="12" fill="#471712">8</text>
+      <text x="280" y="316" text-anchor="middle" font-size="11" fill="#893D24">concurrent consumers</text>
+
+      <!-- Grid lines -->
+      <line x1="60" y1="220" x2="470" y2="220" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="160" x2="470" y2="160" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="100" x2="470" y2="100" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- Thread-Coordinated line (blue) -->
+      <!-- y = 280 - (val/110 * 240) -->
+      <!-- 48K→175, 93K→77, 78K→110, 76K→114 -->
+      <polyline points="110,175 230,77 350,110 460,114" fill="none" stroke="#471712" stroke-width="3"/>
+      <circle cx="110" cy="175" r="5" fill="#471712"/>
+      <circle cx="230" cy="77" r="5" fill="#471712"/>
+      <circle cx="350" cy="110" r="5" fill="#471712"/>
+      <circle cx="460" cy="114" r="5" fill="#471712"/>
+      <text x="110" y="168" text-anchor="middle" font-size="10" fill="#471712">48K</text>
+      <text x="230" y="70" text-anchor="middle" font-size="10" fill="#471712">93K</text>
+      <text x="350" y="103" text-anchor="middle" font-size="10" fill="#471712">78K</text>
+      <text x="460" y="107" text-anchor="middle" font-size="10" fill="#471712">76K</text>
+
+      <!-- Pre-Partitioned line (red) -->
+      <!-- 76K→114, 100K→62, 62K→145, 42K→188 -->
+      <polyline points="110,114 230,62 350,145 460,188" fill="none" stroke="#E33030" stroke-width="3" stroke-dasharray="8,4"/>
+      <circle cx="110" cy="114" r="5" fill="#E33030"/>
+      <circle cx="230" cy="62" r="5" fill="#E33030"/>
+      <circle cx="350" cy="145" r="5" fill="#E33030"/>
+      <circle cx="460" cy="188" r="5" fill="#E33030"/>
+      <text x="110" y="107" text-anchor="middle" font-size="10" fill="#E33030">76K</text>
+      <text x="230" y="55" text-anchor="middle" font-size="10" fill="#E33030">100K</text>
+      <text x="350" y="155" text-anchor="middle" font-size="10" fill="#E33030">62K</text>
+      <text x="460" y="198" text-anchor="middle" font-size="10" fill="#E33030">42K</text>
+
+      <!-- Legend -->
+      <line x1="300" y1="40" x2="330" y2="40" stroke="#471712" stroke-width="3"/>
+      <text x="335" y="44" font-size="11" fill="#471712">Thread-Coordinated</text>
+      <line x1="300" y1="56" x2="330" y2="56" stroke="#E33030" stroke-width="3" stroke-dasharray="8,4"/>
+      <text x="335" y="60" font-size="11" fill="#E33030">Pre-Partitioned</text>
+    </svg>
+  </div>
+
+  <aside class="notes">
+    Here is throughput as we scale from 1 to 8 concurrent consumers.
+    With one consumer, Pre-Partitioned wins - 76K versus 48K. With three, both peak and they are close.
+    But at five and eight consumers, Pre-Partitioned collapses - 62K, then 42K. Thread-Coordinated holds steady around 76K.
+    Pre-Partitioned is faster when uncontended but falls apart under contention. Thread-Coordinated queues work instead of blocking.
+  </aside>
+</section>
+
+<section>
+  <h3>Tail Latency Tells the Story</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 520 300" style="width: 100%; max-width: 520px;">
+      <!-- Axes -->
+      <line x1="60" y1="40" x2="60" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+      <line x1="60" y1="260" x2="480" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels (ms) -->
+      <text x="55" y="264" text-anchor="end" font-size="11" fill="#893D24">0ms</text>
+      <text x="55" y="204" text-anchor="end" font-size="11" fill="#893D24">25ms</text>
+      <text x="55" y="152" text-anchor="end" font-size="11" fill="#893D24">50ms</text>
+      <text x="55" y="96" text-anchor="end" font-size="11" fill="#893D24">75ms</text>
+      <text x="55" y="44" text-anchor="end" font-size="11" fill="#893D24">100ms</text>
+
+      <!-- Grid -->
+      <line x1="60" y1="204" x2="480" y2="204" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="152" x2="480" y2="152" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="96" x2="480" y2="96" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- Thread-Coordinated group -->
+      <!-- y = 260 - (val/110 * 220) -->
+      <!-- p50=11ms → y=238, h=22 -->
+      <rect x="120" y="238" width="50" height="22" rx="3" fill="#471712"/>
+      <text x="145" y="234" text-anchor="middle" font-size="11" fill="#471712" font-weight="bold">11ms</text>
+      <!-- p99=27ms → y=206, h=54 -->
+      <rect x="175" y="206" width="50" height="54" rx="3" fill="#471712" opacity="0.6"/>
+      <text x="200" y="200" text-anchor="middle" font-size="11" fill="#471712" font-weight="bold">27ms</text>
+
+      <!-- Pre-Partitioned group -->
+      <!-- p50=2.5ms → y=255, h=5 -->
+      <rect x="300" y="255" width="50" height="5" rx="3" fill="#E33030"/>
+      <text x="325" y="249" text-anchor="middle" font-size="11" fill="#E33030" font-weight="bold">2.5ms</text>
+      <!-- p99=100ms → y=60, h=200 -->
+      <rect x="355" y="60" width="50" height="200" rx="3" fill="#E33030" opacity="0.6"/>
+      <text x="380" y="54" text-anchor="middle" font-size="13" fill="#E33030" font-weight="bold">100ms!</text>
+
+      <!-- Group labels -->
+      <text x="172" y="285" text-anchor="middle" font-size="12" fill="#471712">Thread-Coordinated</text>
+      <text x="352" y="285" text-anchor="middle" font-size="12" fill="#E33030">Pre-Partitioned</text>
+
+      <!-- Legend: p50 vs p99 -->
+      <rect x="340" y="10" width="12" height="12" rx="2" fill="#471712"/>
+      <text x="357" y="20" font-size="10" fill="#471712">p50</text>
+      <rect x="400" y="10" width="12" height="12" rx="2" fill="#471712" opacity="0.6"/>
+      <text x="417" y="20" font-size="10" fill="#471712">p99</text>
+    </svg>
+  </div>
+  <p>Thread-Coord: predictable. Pre-Part: <span class="problem">40x tail spike</span>.</p>
+
+  <aside class="notes">
+    Latency is the metric that wakes you up at 3am.
+    Thread-Coordinated: p50 is 11 milliseconds, p99 is 27 milliseconds. A 2.5x spread. Predictable.
+    Pre-Partitioned: p50 is 2.5 milliseconds - beautiful - but p99 is 100 milliseconds. A 40x spread. Sometimes you just get stuck behind a giant batch.
+    For a streaming system, p99 is what matters. Thread-Coordinated wins on the metric that counts.
+  </aside>
+</section>
+
+<section>
+  <h2>Separation of Concerns</h2>
+  <ul>
+    <li>Callers <span class="solution">never block</span></li>
+    <li>Coordinator matches work to available Ractors</li>
+    <li>Saturated? Work queues up; callers keep going</li>
+  </ul>
+
+  <aside class="notes">
+    Why does Thread-Coordinated handle contention so well? Because the caller and the dispatch decision are decoupled.
+    The caller just pushes work onto a Ruby Queue and moves on. A separate coordinator thread sits in a loop - wait for work, wait for a ready Ractor, hand it off.
+    If the pool is saturated, the queue grows. Callers do not notice. Backpressure is implicit and graceful.
+  </aside>
+</section>
+
+<section>
+  <h3>Coordinator Thread Overhead?</h3>
+  <p><span class="solution">~0%</span></p>
+
+  <aside class="notes">
+    The natural worry is - you added an extra thread. Does that thread cost something?
+    Measured overhead is essentially zero. The coordinator spends 99.9 percent of its time blocked on a queue or a Ractor port. It only wakes up when there is actual work to dispatch. The bottleneck is always the deserialization itself.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     ACT 3 - THE SOLUTION (~7 min)
+     ═══════════════════════════════════════════════════════ -->
+
+<section data-transition="convex">
+  <h2>The Pattern</h2>
+
+  <aside class="notes">
+    Now let me show you what the winning pattern actually looks like - diagram first, then code. If you only stay for ten minutes, stay for these slides.
+  </aside>
+</section>
+
+<section>
+  <h3>Thread-Coordinated Ractor Pool</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 720 300" style="width: 100%; max-width: 720px;">
+      <!-- Listener Threads -->
+      <rect x="10" y="30" width="120" height="36" rx="6" fill="#471712" opacity="0.15" stroke="#471712" stroke-width="2"/>
+      <text x="70" y="53" text-anchor="middle" font-size="12" fill="#471712" font-weight="600">Listener 1</text>
+
+      <rect x="10" y="80" width="120" height="36" rx="6" fill="#471712" opacity="0.15" stroke="#471712" stroke-width="2"/>
+      <text x="70" y="103" text-anchor="middle" font-size="12" fill="#471712" font-weight="600">Listener N</text>
+
+      <text x="70" y="74" text-anchor="middle" font-size="12" fill="#893D24">...</text>
+
+      <!-- Work Queue -->
+      <rect x="170" y="40" width="90" height="65" rx="6" fill="#E33030" opacity="0.1" stroke="#E33030" stroke-width="2"/>
+      <text x="215" y="66" text-anchor="middle" font-size="11" fill="#E33030" font-weight="600">Work</text>
+      <text x="215" y="82" text-anchor="middle" font-size="11" fill="#E33030" font-weight="600">Queue</text>
+
+      <!-- Arrows: Listeners → Work Queue (non-blocking push) -->
+      <line x1="130" y1="48" x2="168" y2="60" stroke="#471712" stroke-width="2" marker-end="url(#arrowBlue)"/>
+      <line x1="130" y1="98" x2="168" y2="85" stroke="#471712" stroke-width="2" marker-end="url(#arrowBlue)"/>
+      <text x="152" y="38" text-anchor="middle" font-size="9" fill="#471712">non-blocking</text>
+      <text x="152" y="112" text-anchor="middle" font-size="9" fill="#471712">push</text>
+
+      <!-- Coordinator Thread -->
+      <rect x="300" y="40" width="110" height="65" rx="6" fill="#DBB8B4" opacity="0.15" stroke="#DBB8B4" stroke-width="2"/>
+      <text x="355" y="62" text-anchor="middle" font-size="11" fill="#DBB8B4" font-weight="600">Coordinator</text>
+      <text x="355" y="78" text-anchor="middle" font-size="11" fill="#DBB8B4" font-weight="600">Thread</text>
+      <text x="355" y="96" text-anchor="middle" font-size="9" fill="#DBB8B4">waits for ready</text>
+      <text x="355" y="106" text-anchor="middle" font-size="9" fill="#DBB8B4">worker + work</text>
+
+      <!-- Arrow: Work Queue → Coordinator -->
+      <line x1="260" y1="72" x2="298" y2="72" stroke="#E33030" stroke-width="2" marker-end="url(#arrowPurple)"/>
+
+      <!-- Worker Ractors -->
+      <rect x="460" y="15" width="240" height="36" rx="6" fill="#893D24" opacity="0.15" stroke="#893D24" stroke-width="2"/>
+      <text x="580" y="38" text-anchor="middle" font-size="11" fill="#893D24" font-weight="600">Ractor Worker 1 - parse + validate</text>
+
+      <rect x="460" y="60" width="240" height="36" rx="6" fill="#893D24" opacity="0.15" stroke="#893D24" stroke-width="2"/>
+      <text x="580" y="83" text-anchor="middle" font-size="11" fill="#893D24" font-weight="600">Ractor Worker 2 - parse + validate</text>
+
+      <text x="580" y="112" text-anchor="middle" font-size="12" fill="#893D24">...</text>
+
+      <rect x="460" y="120" width="240" height="36" rx="6" fill="#893D24" opacity="0.15" stroke="#893D24" stroke-width="2"/>
+      <text x="580" y="143" text-anchor="middle" font-size="11" fill="#893D24" font-weight="600">Ractor Worker N - parse + validate</text>
+
+      <!-- Arrows: Coordinator → Workers -->
+      <line x1="410" y1="55" x2="458" y2="35" stroke="#893D24" stroke-width="2" marker-end="url(#arrowGreen)"/>
+      <line x1="410" y1="72" x2="458" y2="78" stroke="#893D24" stroke-width="2" marker-end="url(#arrowGreen)"/>
+      <line x1="410" y1="90" x2="458" y2="135" stroke="#893D24" stroke-width="2" marker-end="url(#arrowGreen)"/>
+      <text x="437" y="50" text-anchor="middle" font-size="9" fill="#893D24">move: true</text>
+
+      <!-- Readiness signal: Workers → Coordinator -->
+      <path d="M 460,152 L 430,180 L 355,180 L 355,110" fill="none" stroke="#893D24" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowGreen)"/>
+      <text x="400" y="195" text-anchor="middle" font-size="9" fill="#893D24">signal ready</text>
+
+      <!-- Return path: Workers → Listeners (results via Future) -->
+      <path d="M 580,160 L 580,240 L 70,240 L 70,120" fill="none" stroke="#E33030" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowRed)"/>
+      <text x="340" y="234" text-anchor="middle" font-size="10" fill="#E33030">results via Future (already shareable - freeze: true)</text>
+
+      <!-- Arrow markers -->
+      <defs>
+        <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#471712"/>
+        </marker>
+        <marker id="arrowPurple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#E33030"/>
+        </marker>
+        <marker id="arrowBrown" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#DBB8B4"/>
+        </marker>
+        <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#893D24"/>
+        </marker>
+        <marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#E33030"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <aside class="notes">
+    Let me walk you through this diagram left to right.
+    On the left, listener threads push raw payloads onto a Ruby Queue. Non-blocking - they never wait on the pool.
+    In the center, the coordinator thread waits for both work and a ready Ractor, then matches them up.
+    On the right, the worker Ractors parse, validate, signal ready, and repeat. Results go back via Ractor::Port - already shareable, no copy needed.
+    The key point is that only the coordinator and the workers talk to each other. Callers stay out entirely.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Design Principles</h3>
+  <table class="benchmark" style="margin-top: 60px;">
+    <tr><th>Principle</th><th>How</th></tr>
+    <tr><td>Persistent pool</td><td>Create once, reuse forever</td></tr>
+    <tr><td>Non-blocking dispatch</td><td>Callers never wait</td></tr>
+    <tr><td>Zero-copy both ways</td><td><code>move: true</code> in, <code>freeze: true</code> out</td></tr>
+    <tr><td>Per-message rescue</td><td>Errors never kill workers</td></tr>
+  </table>
+
+  <aside class="notes">
+    Four design principles.
+    Persistent pool - Ractor creation is expensive, tens of milliseconds. You create the pool once at app boot and reuse it forever.
+    Non-blocking dispatch - the caller pushes and moves on. They never block on pool capacity.
+    Zero-copy both ways - move: true gets the payload in without a copy, freeze: true gets the result out without a copy.
+    Per-message rescue - if one payload is malformed, the worker rescues, marks it as a failure, and continues. The Ractor never dies.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Start Work Early</h3>
+  <pre><code class="ruby"># Step 1: Dispatch to Ractors immediately
+future = pool.dispatch_async(messages, deserializer)
+
+# Step 2: Job sits in thread pool queue...
+#         Ractors are already working
+
+# Step 3: When a thread picks it up, results are waiting
+results = future.retrieve</code></pre>
+  <p class="secondary" style="margin-top: 15px;">Ractors parse while the job waits in the thread pool queue.</p>
+
+  <aside class="notes">
+    Here is a subtle but important optimization. We dispatch to the Ractors as soon as we receive the messages, before the job even goes into the worker thread queue.
+    So the flow is - poll Kafka, fire off dispatch_async to Ractors, then the job goes into the thread queue. By the time a thread picks it up, the Ractors have already been parsing for several milliseconds.
+    You are getting parallelism from the dead time between "we have data" and "we have a thread free to process it."
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Crossing the Ractor Boundary</h3>
+  <pre><code class="ruby"># Mutable objects are rejected
+ractor.send(message)  # => Ractor::IsolationError!
+
+# Extract only what's needed into a frozen Data class
+MessageProxy = Data.define(:raw_payload)
+proxy = MessageProxy.new(raw_payload: payload)
+ractor.send(proxy)    # works</code></pre>
+
+  <aside class="notes">
+    Your existing Message object has methods, mutable state, references back to the consumer. Ractors reject all of that.
+    The fix is to extract only what the Ractor needs into a Data.define class. These are frozen, value-typed, and automatically shareable since Ruby 3.2.
+    At the boundary, you package what you need into a Data and send that. Clean separation without making Message Ractor-safe.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>The Worker (inside the Ractor)</h3>
+  <pre><code class="ruby" data-trim data-line-numbers="2|3|4-8|9-10|11">loop do
+  coordinator_port.send({ worker_id: wid, port: my_port })
+  msg = my_port.receive
+  results = msg[:data].map do |payload|
+    parsed = JSON.parse(payload, freeze: true)
+    validate(parsed)
+    parsed
+  rescue StandardError => e
+    error_marker  # never crash the worker
+  end
+  msg[:result_port].send({ batch_index: msg[:bi], results: results })
+end</code></pre>
+
+  <aside class="notes">
+    Let me walk through the highlighted lines.
+    Line 2 - the worker announces readiness. It tells the coordinator "I am free, here is where to send my next job."
+    Line 3 - it blocks waiting for work to arrive on its private port.
+    Lines 4 through 8 - the actual work. Parse with freeze: true, validate, return the parsed object.
+    Lines 9 and 10 - per-message rescue. If something fails, we swap in a frozen error marker. The worker keeps going - one bad payload does not poison the whole batch.
+    Line 11 - send results back via the result port. And the loop repeats.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Dispatch (coordinator thread)</h3>
+  <pre><code class="ruby" data-trim data-line-numbers="1-2|4-5|6|7|8"># Caller side - non-blocking push
+@work_queue.push({ data: batch, result_port: rp, batch_index: idx })
+
+# Coordinator thread - match work to a ready worker
+loop do
+  work = @work_queue.pop               # blocks on work
+  ready = @coordinator_port.receive          # blocks on worker
+  ready[:port].send(work, move: true)  # zero-copy dispatch
+end</code></pre>
+
+  <aside class="notes">
+    This is the other half, and it is a tiny amount of code for what it does.
+    At the top - the caller side. One line. Push the job onto a queue and return immediately.
+    At the bottom - the coordinator loop. Two blocking pops - one for work, one for a ready worker. Whichever comes second unblocks the dispatch.
+    Notice move: true on the send - that is the zero-copy ownership transfer. The coordinator no longer owns the work hash, the worker does.
+    The whole pattern is maybe 30 lines of Ruby. The complexity is in the design, not the code.
+  </aside>
+</section>
+
+<section>
+  <h3>Parse + Validate (500 msgs, 5 Ractors)</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 620 210" style="width: 100%; max-width: 620px;">
+      <!-- Labels -->
+      <text x="130" y="30" text-anchor="end" font-size="13" fill="#471712">524B</text>
+      <text x="130" y="68" text-anchor="end" font-size="13" fill="#471712">5.1KB</text>
+      <text x="130" y="106" text-anchor="end" font-size="13" fill="#471712">18.8KB</text>
+      <text x="130" y="144" text-anchor="end" font-size="13" fill="#471712">78KB</text>
+
+      <!-- 1.0x reference line -->
+      <line x1="273" y1="10" x2="273" y2="160" stroke="#DBB8B4" stroke-width="1" stroke-dasharray="5,5"/>
+      <text x="273" y="175" text-anchor="middle" font-size="10" fill="#DBB8B4">1.0x</text>
+
+      <!-- Bars: scale 0-3.0x, max width 430px starting at x=140 -->
+      <!-- 1.0x = 143px from start -->
+      <!-- 1.8x → 258px -->
+      <rect x="140" y="18" width="258" height="22" rx="3" fill="#893D24"/>
+      <text x="403" y="33" font-size="13" fill="#893D24" font-weight="bold">1.8x</text>
+
+      <!-- 2.6x → 373px -->
+      <rect x="140" y="56" width="373" height="22" rx="3" fill="#893D24"/>
+      <text x="518" y="71" font-size="13" fill="#893D24" font-weight="bold">2.6x</text>
+
+      <!-- 1.9x → 272px -->
+      <rect x="140" y="94" width="272" height="22" rx="3" fill="#893D24"/>
+      <text x="417" y="109" font-size="13" fill="#893D24" font-weight="bold">1.9x</text>
+
+      <!-- 1.9x → 272px -->
+      <rect x="140" y="132" width="272" height="22" rx="3" fill="#893D24"/>
+      <text x="417" y="147" font-size="13" fill="#893D24" font-weight="bold">1.9x</text>
+    </svg>
+  </div>
+
+  <aside class="notes">
+    Five Ractors, 500 messages, parse plus validate. Here are the speedups across four payload sizes.
+    524 bytes: 1.8x. Small messages, but still a solid win.
+    5.1 KB: 2.6x - this is the sweet spot. A typical event payload.
+    18.8 KB and 78 KB: both 1.9x. Holds up at large sizes too.
+    Meaningful speedups at every size we benchmarked.
+  </aside>
+</section>
+
+<section>
+  <h3>Best Result</h3>
+  <p class="big-number good">~3.5x</p>
+  <p>5.1KB at 8+ Ractors</p>
+
+  <aside class="notes">
+    With more Ractors and the right payload size, we hit about 3.5x. That is the headline number. Compare this to threads, which top out at 1.0x for the same workload because of the GVL.
+  </aside>
+</section>
+
+<section>
+  <h3>Move More Into the Ractor</h3>
+  <p>Any <span class="highlight">isolated, CPU-bound work</span> can move inside</p>
+  <p class="fragment fade-in" style="margin-top: 20px;">More work per message = <span class="solution">bigger gains</span></p>
+
+  <aside class="notes">
+    Once the Ractor pool exists, deserialization is not the only thing you can run inside it. Anything that is CPU-bound and operates on isolated data is a candidate - validation, transformation, filtering, schema checks.
+    The more work you push into the Ractor per message, the better the amortization. Coordination cost is fixed, useful work grows.
+    And the benchmarks I am showing already include validation, so the numbers are realistic.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Mixed Realistic Workload</h3>
+  <p class="secondary">524B&ndash;78KB shuffled, parse + validate</p>
+  <table class="benchmark">
+    <tr><th>Workers</th><th>Speedup</th></tr>
+    <tr><td>5 threads</td><td>1.16x</td></tr>
+    <tr><td>1 ractor</td><td>0.69x</td></tr>
+    <tr><td>2 ractors</td><td class="winner">1.33x</td></tr>
+    <tr><td>5 ractors</td><td class="winner">2.59x</td></tr>
+    <tr><td>8 ractors</td><td class="winner">2.82x</td></tr>
+  </table>
+
+  <aside class="notes">
+    This is a mixed workload with shuffled payload sizes - what production actually looks like.
+    Five threads: 1.16x. The GVL serializes the work. One Ractor: 0.69x - overhead without benefit.
+    But two Ractors: 1.33x - already beats five threads. Five Ractors: 2.59x. Eight: 2.82x.
+    Even a tiny Ractor pool outperforms a respectable thread pool for this kind of work.
+  </aside>
+</section>
+
+<section data-transition="fade">
+  <h2>Why Not Just Threads?</h2>
+
+  <aside class="notes">
+    I know what you are thinking - threads are simpler, why bother with Ractors? The next few slides answer that directly. For this class of work, threads literally do not parallelize at all.
+  </aside>
+</section>
+
+<section>
+  <h3>Threads vs Ractors</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 580 320" style="width: 100%; max-width: 580px;">
+      <!-- Axes -->
+      <line x1="60" y1="40" x2="60" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+      <line x1="60" y1="260" x2="550" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels - scale 0-5.0x -->
+      <text x="55" y="264" text-anchor="end" font-size="11" fill="#893D24">0x</text>
+      <text x="55" y="220" text-anchor="end" font-size="11" fill="#893D24">1.0x</text>
+      <text x="55" y="176" text-anchor="end" font-size="11" fill="#893D24">2.0x</text>
+      <text x="55" y="132" text-anchor="end" font-size="11" fill="#893D24">3.0x</text>
+      <text x="55" y="88" text-anchor="end" font-size="11" fill="#893D24">4.0x</text>
+      <text x="55" y="44" text-anchor="end" font-size="11" fill="#893D24">5.0x</text>
+
+      <!-- 1.0x reference line -->
+      <!-- y = 260 - (val/5.0 * 220) = 260 - val*44 -->
+      <line x1="60" y1="216" x2="550" y2="216" stroke="#DBB8B4" stroke-width="1" stroke-dasharray="5,5"/>
+      <text x="555" y="220" font-size="9" fill="#DBB8B4">1.0x</text>
+
+      <!-- Grid -->
+      <line x1="60" y1="172" x2="550" y2="172" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="128" x2="550" y2="128" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="84" x2="550" y2="84" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- Parse+validate (center 120) - threads 1.09x, ractors 2.43x -->
+      <rect x="80" y="212" width="36" height="48" rx="3" fill="#E33030"/>
+      <text x="98" y="207" text-anchor="middle" font-size="10" fill="#E33030">1.09x</text>
+      <rect x="120" y="153" width="36" height="107" rx="3" fill="#893D24"/>
+      <text x="138" y="148" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">2.43x</text>
+      <text x="118" y="280" text-anchor="middle" font-size="10" fill="#471712">Parse+validate</text>
+      <text x="118" y="292" text-anchor="middle" font-size="9" fill="#893D24">5 workers</text>
+
+      <!-- Scaling 8w (center 240) - threads 0.81x, ractors 3.17x -->
+      <rect x="200" y="224" width="36" height="36" rx="3" fill="#E33030"/>
+      <text x="218" y="219" text-anchor="middle" font-size="10" fill="#E33030">0.81x</text>
+      <rect x="240" y="120" width="36" height="140" rx="3" fill="#893D24"/>
+      <text x="258" y="115" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">3.17x</text>
+      <text x="238" y="280" text-anchor="middle" font-size="10" fill="#471712">Scaling</text>
+      <text x="238" y="292" text-anchor="middle" font-size="9" fill="#893D24">8 workers</text>
+
+      <!-- Sustained (center 360) - threads 0.79x, ractors 2.27x -->
+      <rect x="320" y="225" width="36" height="35" rx="3" fill="#E33030"/>
+      <text x="338" y="220" text-anchor="middle" font-size="10" fill="#E33030">0.79x</text>
+      <rect x="360" y="160" width="36" height="100" rx="3" fill="#893D24"/>
+      <text x="378" y="155" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">2.27x</text>
+      <text x="358" y="280" text-anchor="middle" font-size="10" fill="#471712">Sustained</text>
+      <text x="358" y="292" text-anchor="middle" font-size="9" fill="#893D24">continuous load</text>
+
+      <!-- Contention (center 480) - threads 1.02x, ractors 2.44x (48K/s vs 117K/s) -->
+      <rect x="440" y="216" width="36" height="44" rx="3" fill="#E33030"/>
+      <text x="458" y="211" text-anchor="middle" font-size="10" fill="#E33030">1.02x</text>
+      <rect x="480" y="153" width="36" height="107" rx="3" fill="#893D24"/>
+      <text x="498" y="148" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">2.44x</text>
+      <text x="478" y="280" text-anchor="middle" font-size="10" fill="#471712">Contention</text>
+      <text x="478" y="292" text-anchor="middle" font-size="9" fill="#893D24">5 consumers</text>
+
+      <!-- Legend -->
+      <rect x="370" y="38" width="12" height="12" rx="2" fill="#E33030"/>
+      <text x="387" y="49" font-size="11" fill="#E33030">Threads</text>
+      <rect x="370" y="55" width="12" height="12" rx="2" fill="#893D24"/>
+      <text x="387" y="66" font-size="11" fill="#893D24">Ractors</text>
+    </svg>
+  </div>
+
+  <aside class="notes">
+    Four real workloads, threads versus Ractors at the same worker count.
+    Parse and validate with 5 workers: threads 1.09x, Ractors 2.43x.
+    Scaling with 8 workers: threads 0.81x - actually slower than sequential. Ractors 3.17x.
+    Sustained load: threads 0.79x, Ractors 2.27x. Contention: threads 1.02x, Ractors 2.44x.
+    The pattern is consistent - threads contribute nothing for pure-Ruby CPU work. Ractors deliver real parallelism every time.
+  </aside>
+</section>
+
+<section>
+  <h3>Threads vs Ractors: Scaling</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 520 320" style="width: 100%; max-width: 520px;">
+      <!-- Axes -->
+      <line x1="60" y1="40" x2="60" y2="280" stroke="#DBB8B4" stroke-width="1"/>
+      <line x1="60" y1="280" x2="470" y2="280" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels - scale 0-5.0x -->
+      <text x="55" y="284" text-anchor="end" font-size="11" fill="#893D24">0x</text>
+      <text x="55" y="232" text-anchor="end" font-size="11" fill="#893D24">1.0x</text>
+      <text x="55" y="184" text-anchor="end" font-size="11" fill="#893D24">2.0x</text>
+      <text x="55" y="136" text-anchor="end" font-size="11" fill="#893D24">3.0x</text>
+      <text x="55" y="88" text-anchor="end" font-size="11" fill="#893D24">4.0x</text>
+      <text x="55" y="44" text-anchor="end" font-size="11" fill="#893D24">5.0x</text>
+      <text x="10" y="160" text-anchor="middle" font-size="11" fill="#893D24" transform="rotate(-90 10 160)">speedup</text>
+
+      <!-- X axis labels -->
+      <text x="110" y="300" text-anchor="middle" font-size="12" fill="#471712">1</text>
+      <text x="230" y="300" text-anchor="middle" font-size="12" fill="#471712">3</text>
+      <text x="350" y="300" text-anchor="middle" font-size="12" fill="#471712">5</text>
+      <text x="460" y="300" text-anchor="middle" font-size="12" fill="#471712">8</text>
+      <text x="280" y="316" text-anchor="middle" font-size="11" fill="#893D24">workers</text>
+
+      <!-- 1.0x reference line -->
+      <!-- y = 280 - (val/5.0 * 240) → 1.0x = 280-48 = 232 -->
+      <line x1="60" y1="232" x2="470" y2="232" stroke="#DBB8B4" stroke-width="1" stroke-dasharray="5,5"/>
+      <text x="475" y="236" font-size="9" fill="#DBB8B4">1.0x</text>
+
+      <!-- Grid -->
+      <line x1="60" y1="184" x2="470" y2="184" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="136" x2="470" y2="136" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="88" x2="470" y2="88" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- Threads (red) -->
+      <!-- y = 280 - (val/5.0 * 240) = 280 - val*48 -->
+      <!-- 0.91→236, 1.13→226, 0.82→241, 0.81→241 -->
+      <polyline points="110,236 230,226 350,241 460,241" fill="none" stroke="#E33030" stroke-width="3" stroke-dasharray="8,4"/>
+      <circle cx="110" cy="236" r="5" fill="#E33030"/>
+      <circle cx="230" cy="226" r="5" fill="#E33030"/>
+      <circle cx="350" cy="241" r="5" fill="#E33030"/>
+      <circle cx="460" cy="241" r="5" fill="#E33030"/>
+      <text x="460" y="253" text-anchor="middle" font-size="10" fill="#E33030" font-weight="bold">0.81x</text>
+
+      <!-- Ractors (green) -->
+      <!-- 0.79→242, 2.07→181, 2.5→160, 3.17→128 -->
+      <polyline points="110,242 230,181 350,160 460,128" fill="none" stroke="#893D24" stroke-width="3"/>
+      <circle cx="110" cy="242" r="5" fill="#893D24"/>
+      <circle cx="230" cy="181" r="5" fill="#893D24"/>
+      <circle cx="350" cy="160" r="5" fill="#893D24"/>
+      <circle cx="460" cy="128" r="5" fill="#893D24"/>
+      <text x="460" y="120" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">3.17x</text>
+
+      <!-- Legend -->
+      <line x1="310" y1="40" x2="340" y2="40" stroke="#E33030" stroke-width="3" stroke-dasharray="8,4"/>
+      <text x="345" y="44" font-size="11" fill="#E33030">Threads</text>
+      <line x1="310" y1="56" x2="340" y2="56" stroke="#893D24" stroke-width="3"/>
+      <text x="345" y="60" font-size="11" fill="#893D24">Ractors</text>
+    </svg>
+  </div>
+
+  <aside class="notes">
+    Same metric, scaled across worker count.
+    Threads are flat. 1, 3, 5, 8 workers - barely above 1.0x. More workers do not help and sometimes they hurt.
+    Ractors show a clean upward curve. 1 worker: 0.79x. 3 workers: 2.07x. 5: 2.5x. 8: 3.17x. Each added worker adds real throughput.
+    This is the chart that justifies the entire pattern. The shapes of these two curves are the answer to "why not just threads."
+  </aside>
+</section>
+
+<section>
+  <p>Threads plateau at <span class="problem">~1x</span>.</p>
+  <p>Ractors <span class="solution">bypass the GVL</span>: <span class="solution">3.2x</span> at 8 workers.</p>
+
+  <aside class="notes">
+    Threads plateau at 1x. Ractors scale linearly until you run out of cores. No clever code - the difference is purely in which primitive you choose.
+  </aside>
+</section>
+
+<section>
+  <h3>CPU Efficiency</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 560 300" style="width: 100%; max-width: 560px;">
+      <!-- Axes -->
+      <line x1="60" y1="40" x2="60" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+      <line x1="60" y1="260" x2="520" y2="260" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels -->
+      <text x="55" y="264" text-anchor="end" font-size="11" fill="#893D24">0x</text>
+      <text x="55" y="191" text-anchor="end" font-size="11" fill="#893D24">1.0x</text>
+      <text x="55" y="118" text-anchor="end" font-size="11" fill="#893D24">2.0x</text>
+      <text x="55" y="44" text-anchor="end" font-size="11" fill="#893D24">3.0x</text>
+
+      <!-- 1.0x reference line -->
+      <line x1="60" y1="187" x2="520" y2="187" stroke="#DBB8B4" stroke-width="1" stroke-dasharray="5,5"/>
+
+      <!-- Grid -->
+      <line x1="60" y1="114" x2="520" y2="114" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- Scale: y = 260 - (val/3.0 * 220) -->
+      <!-- 524B: wall=1.8→128, cpu=1.4→157 -->
+      <rect x="95" y="128" width="35" height="132" rx="3" fill="#893D24"/>
+      <rect x="133" y="157" width="35" height="103" rx="3" fill="#DBB8B4"/>
+      <text x="95" y="122" font-size="10" fill="#893D24" font-weight="bold">1.8x</text>
+      <text x="133" y="151" font-size="10" fill="#DBB8B4">1.4x</text>
+
+      <!-- 5.1KB: wall=2.6→69, cpu=1.5→150 -->
+      <rect x="210" y="69" width="35" height="191" rx="3" fill="#893D24"/>
+      <rect x="248" y="150" width="35" height="110" rx="3" fill="#DBB8B4"/>
+      <text x="210" y="63" font-size="10" fill="#893D24" font-weight="bold">2.6x</text>
+      <text x="248" y="144" font-size="10" fill="#DBB8B4">1.5x</text>
+
+      <!-- 18.8KB: wall=1.9→121, cpu=1.3→165 -->
+      <rect x="325" y="121" width="35" height="139" rx="3" fill="#893D24"/>
+      <rect x="363" y="165" width="35" height="95" rx="3" fill="#DBB8B4"/>
+      <text x="325" y="115" font-size="10" fill="#893D24" font-weight="bold">1.9x</text>
+      <text x="363" y="159" font-size="10" fill="#DBB8B4">1.3x</text>
+
+      <!-- 78KB: wall=1.9→121, cpu=1.7→135 -->
+      <rect x="440" y="121" width="35" height="139" rx="3" fill="#893D24"/>
+      <rect x="478" y="135" width="35" height="125" rx="3" fill="#DBB8B4"/>
+      <text x="440" y="115" font-size="10" fill="#893D24" font-weight="bold">1.9x</text>
+      <text x="478" y="129" font-size="10" fill="#DBB8B4">1.7x</text>
+
+      <!-- X axis labels -->
+      <text x="131" y="280" text-anchor="middle" font-size="12" fill="#471712">524B</text>
+      <text x="246" y="280" text-anchor="middle" font-size="12" fill="#471712">5.1KB</text>
+      <text x="361" y="280" text-anchor="middle" font-size="12" fill="#471712">18.8KB</text>
+      <text x="476" y="280" text-anchor="middle" font-size="12" fill="#471712">78KB</text>
+
+      <!-- Legend -->
+      <rect x="370" y="38" width="12" height="12" rx="2" fill="#893D24"/>
+      <text x="387" y="49" font-size="11" fill="#893D24">Wall speedup</text>
+      <rect x="370" y="55" width="12" height="12" rx="2" fill="#DBB8B4"/>
+      <text x="387" y="66" font-size="11" fill="#DBB8B4">Total CPU cost</text>
+    </svg>
+  </div>
+  <p class="solution">Real parallelism, not just overhead.</p>
+
+  <aside class="notes">
+    Important sanity check - are we just burning more CPU for the same work?
+    Wall speedup should be much higher than total CPU cost. And at every payload size, it is.
+    We are not just trading wall time for CPU time - we are getting more done per CPU-second.
+  </aside>
+</section>
+
+<!-- ─────────────────────────────────────────────────────
+     End-to-end validation against Kafka (bridge into Act 5)
+     ───────────────────────────────────────────────────── -->
+
+<section data-transition="convex">
+  <h2>Beyond Microbenchmarks</h2>
+  <p class="secondary">Microbenchmarks lie. Production doesn't.</p>
+
+  <aside class="notes">
+    Everything I have shown so far was an in-process benchmark. Generated payloads, in-memory work, no broker.
+    Microbenchmarks are great for isolating effects but they are famous for not surviving contact with reality. So I wired the whole pattern up to an actual Kafka broker and re-ran everything. The next slides are those results.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>End-to-End Setup</h3>
+  <ul>
+    <li>Karafka &rarr; broker &rarr; Karafka &rarr; Ractor pool</li>
+    <li>6 topics: <strong>1, 5, 10, 25, 50, 100 KB</strong></li>
+    <li>Payload shapes collected from <span class="highlight">real Karafka users</span></li>
+    <li>4 Ractors</li>
+  </ul>
+
+  <aside class="notes">
+    The setup - real producer, real local broker, real consumer, then into the Ractor pool.
+    Six topics, each with 2000 messages of a different size - 1, 5, 10, 25, 50, and 100 KB. Five partitions per topic, four Ractor workers.
+    No in-process payload generation, no fake messages. Real bytes off the wire.
+  </aside>
+</section>
+
+<section>
+  <h3>JSON Crossover (End-to-End)</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 580 300" style="width: 100%; max-width: 580px;">
+      <!-- Y axis -->
+      <line x1="70" y1="30" x2="70" y2="240" stroke="#DBB8B4" stroke-width="1"/>
+      <!-- X axis -->
+      <line x1="70" y1="240" x2="530" y2="240" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels (0-2.0x) -->
+      <text x="65" y="244" text-anchor="end" font-size="11" fill="#893D24">0x</text>
+      <text x="65" y="191" text-anchor="end" font-size="11" fill="#893D24">0.5x</text>
+      <text x="65" y="139" text-anchor="end" font-size="11" fill="#893D24">1.0x</text>
+      <text x="65" y="86" text-anchor="end" font-size="11" fill="#893D24">1.5x</text>
+      <text x="65" y="34" text-anchor="end" font-size="11" fill="#893D24">2.0x</text>
+
+      <!-- Grid lines -->
+      <line x1="70" y1="187" x2="530" y2="187" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="70" y1="82" x2="530" y2="82" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="70" y1="30" x2="530" y2="30" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- 1.0x reference line (sequential baseline) -->
+      <line x1="70" y1="135" x2="530" y2="135" stroke="#DBB8B4" stroke-width="1" stroke-dasharray="5,5"/>
+      <text x="534" y="139" font-size="9" fill="#DBB8B4">seq</text>
+
+      <!-- Bars: scale 0-2.0x over 210px, y = 240 - val*105 -->
+      <!-- 1 KB: 1.44x -->
+      <rect x="90" y="89" width="50" height="151" rx="3" fill="#893D24"/>
+      <text x="115" y="82" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.44x</text>
+
+      <!-- 5 KB: 1.57x -->
+      <rect x="160" y="75" width="50" height="165" rx="3" fill="#893D24"/>
+      <text x="185" y="68" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.57x</text>
+
+      <!-- 10 KB: 1.35x -->
+      <rect x="230" y="98" width="50" height="142" rx="3" fill="#893D24"/>
+      <text x="255" y="91" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.35x</text>
+
+      <!-- 25 KB: 1.75x -->
+      <rect x="300" y="56" width="50" height="184" rx="3" fill="#893D24"/>
+      <text x="325" y="49" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.75x</text>
+
+      <!-- 50 KB: 1.55x -->
+      <rect x="370" y="77" width="50" height="163" rx="3" fill="#893D24"/>
+      <text x="395" y="70" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.55x</text>
+
+      <!-- 100 KB: 1.36x -->
+      <rect x="440" y="97" width="50" height="143" rx="3" fill="#893D24"/>
+      <text x="465" y="90" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.36x</text>
+
+      <!-- X axis labels -->
+      <text x="115" y="258" text-anchor="middle" font-size="12" fill="#471712">1 KB</text>
+      <text x="185" y="258" text-anchor="middle" font-size="12" fill="#471712">5 KB</text>
+      <text x="255" y="258" text-anchor="middle" font-size="12" fill="#471712">10 KB</text>
+      <text x="325" y="258" text-anchor="middle" font-size="12" fill="#471712">25 KB</text>
+      <text x="395" y="258" text-anchor="middle" font-size="12" fill="#471712">50 KB</text>
+      <text x="465" y="258" text-anchor="middle" font-size="12" fill="#471712">100 KB</text>
+
+      <!-- Caveat -->
+      <text x="300" y="286" text-anchor="middle" font-size="10" fill="#893D24" font-style="italic">500 msgs per topic, 4 Ractors</text>
+    </svg>
+  </div>
+  <p>Wins <span class="solution">1.35x&ndash;1.75x</span> across every size.</p>
+
+  <aside class="notes">
+    JSON parse plus validate, end-to-end through Kafka. You can see the numbers on the chart.
+    These are smaller than the in-process benchmarks because broker round-trip and Karafka overhead are now part of the wall time. That is exactly what we want - realistic numbers.
+    The key takeaway is that the pattern holds at every payload size. No cliff anywhere.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>More Threads Don't Help (25 KB)</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 580 320" style="width: 100%; max-width: 580px;">
+      <!-- Axes -->
+      <line x1="60" y1="40" x2="60" y2="280" stroke="#DBB8B4" stroke-width="1"/>
+      <line x1="60" y1="280" x2="530" y2="280" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels (msgs/s) -->
+      <text x="55" y="284" text-anchor="end" font-size="11" fill="#893D24">0</text>
+      <text x="55" y="224" text-anchor="end" font-size="11" fill="#893D24">250</text>
+      <text x="55" y="164" text-anchor="end" font-size="11" fill="#893D24">500</text>
+      <text x="55" y="104" text-anchor="end" font-size="11" fill="#893D24">750</text>
+      <text x="55" y="44" text-anchor="end" font-size="11" fill="#893D24">1000</text>
+      <text x="12" y="160" text-anchor="middle" font-size="11" fill="#893D24" transform="rotate(-90 12 160)">msgs/s</text>
+
+      <!-- Grid -->
+      <line x1="60" y1="220" x2="530" y2="220" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="160" x2="530" y2="160" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="60" y1="100" x2="530" y2="100" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- X axis labels -->
+      <text x="130" y="300" text-anchor="middle" font-size="12" fill="#471712">1</text>
+      <text x="230" y="300" text-anchor="middle" font-size="12" fill="#471712">2</text>
+      <text x="350" y="300" text-anchor="middle" font-size="12" fill="#471712">4</text>
+      <text x="470" y="300" text-anchor="middle" font-size="12" fill="#471712">8</text>
+      <text x="295" y="316" text-anchor="middle" font-size="11" fill="#893D24">concurrency level</text>
+
+      <!-- Inline (red dashed) - flat GVL line: 509, 509, 549, 584 -->
+      <polyline points="130,158 230,158 350,148 470,140" fill="none" stroke="#E33030" stroke-width="3" stroke-dasharray="8,4"/>
+      <circle cx="130" cy="158" r="5" fill="#E33030"/>
+      <circle cx="230" cy="158" r="5" fill="#E33030"/>
+      <circle cx="350" cy="148" r="5" fill="#E33030"/>
+      <circle cx="470" cy="140" r="5" fill="#E33030"/>
+      <text x="130" y="176" text-anchor="middle" font-size="10" fill="#E33030">509</text>
+      <text x="230" y="176" text-anchor="middle" font-size="10" fill="#E33030">509</text>
+      <text x="350" y="166" text-anchor="middle" font-size="10" fill="#E33030">549</text>
+      <text x="470" y="158" text-anchor="middle" font-size="10" fill="#E33030">584</text>
+
+      <!-- Pool (green solid) - growing: 736, 834, 898, 840 -->
+      <polyline points="130,103 230,80 350,64 470,78" fill="none" stroke="#893D24" stroke-width="3"/>
+      <circle cx="130" cy="103" r="5" fill="#893D24"/>
+      <circle cx="230" cy="80" r="5" fill="#893D24"/>
+      <circle cx="350" cy="64" r="5" fill="#893D24"/>
+      <circle cx="470" cy="78" r="5" fill="#893D24"/>
+      <text x="130" y="96" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">736</text>
+      <text x="230" y="73" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">834</text>
+      <text x="350" y="57" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">898</text>
+      <text x="470" y="71" text-anchor="middle" font-size="10" fill="#893D24" font-weight="bold">840</text>
+
+      <!-- Legend -->
+      <line x1="305" y1="18" x2="335" y2="18" stroke="#E33030" stroke-width="3" stroke-dasharray="8,4"/>
+      <text x="340" y="22" font-size="11" fill="#E33030">Threads (GVL-bound)</text>
+      <line x1="305" y1="34" x2="335" y2="34" stroke="#893D24" stroke-width="3"/>
+      <text x="340" y="38" font-size="11" fill="#893D24">Ractors</text>
+    </svg>
+  </div>
+  <p class="secondary">Inline: GVL-flat. Pool: scales and holds.</p>
+
+  <aside class="notes">
+    25 KB payloads, scaling Karafka's worker thread count from 1 to 8.
+    The red dashed line is inline deserialization in the worker threads. Flat - 509, 509, 549, 584 messages per second. Adding threads barely moves the needle. Classic GVL behavior.
+    The green line is the same workload but with the Ractor pool. It climbs from 736 to 898, then holds at about 840 with 8 workers.
+    Two takeaways - the pool delivers real scaling, and the slight dip at 8 workers shows there is a sweet spot.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Avro Crossover (End-to-End, Patched Gem)</h3>
+  <div class="chart-container">
+    <svg viewBox="0 0 580 300" style="width: 100%; max-width: 580px;">
+      <!-- Y axis -->
+      <line x1="70" y1="30" x2="70" y2="240" stroke="#DBB8B4" stroke-width="1"/>
+      <!-- X axis -->
+      <line x1="70" y1="240" x2="530" y2="240" stroke="#DBB8B4" stroke-width="1"/>
+
+      <!-- Y axis labels (0-2.5x) -->
+      <text x="65" y="244" text-anchor="end" font-size="11" fill="#893D24">0x</text>
+      <text x="65" y="202" text-anchor="end" font-size="11" fill="#893D24">0.5x</text>
+      <text x="65" y="160" text-anchor="end" font-size="11" fill="#893D24">1.0x</text>
+      <text x="65" y="118" text-anchor="end" font-size="11" fill="#893D24">1.5x</text>
+      <text x="65" y="76" text-anchor="end" font-size="11" fill="#893D24">2.0x</text>
+      <text x="65" y="34" text-anchor="end" font-size="11" fill="#893D24">2.5x</text>
+
+      <!-- Grid lines -->
+      <line x1="70" y1="198" x2="530" y2="198" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="70" y1="114" x2="530" y2="114" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="70" y1="72" x2="530" y2="72" stroke="#F4EAE9" stroke-width="1"/>
+      <line x1="70" y1="30" x2="530" y2="30" stroke="#F4EAE9" stroke-width="1"/>
+
+      <!-- 1.0x reference line -->
+      <line x1="70" y1="156" x2="530" y2="156" stroke="#DBB8B4" stroke-width="1" stroke-dasharray="5,5"/>
+      <text x="534" y="160" font-size="9" fill="#DBB8B4">seq</text>
+
+      <!-- Bars: scale 0-2.5x over 210px, y = 240 - val*84 -->
+      <!-- 1 KB: 1.87x -->
+      <rect x="90" y="83" width="50" height="157" rx="3" fill="#893D24"/>
+      <text x="115" y="76" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.87x</text>
+
+      <!-- 5 KB: 1.64x -->
+      <rect x="160" y="102" width="50" height="138" rx="3" fill="#893D24"/>
+      <text x="185" y="95" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.64x</text>
+
+      <!-- 10 KB: 1.69x -->
+      <rect x="230" y="98" width="50" height="142" rx="3" fill="#893D24"/>
+      <text x="255" y="91" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.69x</text>
+
+      <!-- 25 KB: 1.62x -->
+      <rect x="300" y="104" width="50" height="136" rx="3" fill="#893D24"/>
+      <text x="325" y="97" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.62x</text>
+
+      <!-- 50 KB: 1.36x -->
+      <rect x="370" y="126" width="50" height="114" rx="3" fill="#893D24"/>
+      <text x="395" y="119" text-anchor="middle" font-size="13" fill="#893D24" font-weight="bold">1.36x</text>
+
+      <!-- 100 KB: 0.99x (muted - break-even) -->
+      <rect x="440" y="157" width="50" height="83" rx="3" fill="#DBB8B4"/>
+      <text x="465" y="150" text-anchor="middle" font-size="13" fill="#DBB8B4" font-weight="bold">0.99x</text>
+
+      <!-- X axis labels -->
+      <text x="115" y="258" text-anchor="middle" font-size="12" fill="#471712">1 KB</text>
+      <text x="185" y="258" text-anchor="middle" font-size="12" fill="#471712">5 KB</text>
+      <text x="255" y="258" text-anchor="middle" font-size="12" fill="#471712">10 KB</text>
+      <text x="325" y="258" text-anchor="middle" font-size="12" fill="#471712">25 KB</text>
+      <text x="395" y="258" text-anchor="middle" font-size="12" fill="#471712">50 KB</text>
+      <text x="465" y="258" text-anchor="middle" font-size="12" fill="#471712">100 KB</text>
+
+      <!-- Caveat -->
+      <text x="300" y="286" text-anchor="middle" font-size="10" fill="#893D24" font-style="italic">500 msgs, 4 Ractors, Avro gem + ~20-line Ractor-compat patch</text>
+    </svg>
+  </div>
+  <p>Same pattern, <span class="highlight">inverted shape</span>.</p>
+
+  <aside class="notes">
+    Same end-to-end setup, but with Avro instead of JSON. The Avro gem is not Ractor-safe out of the box - I had to apply about a 20-line patch which I plan to upstream.
+    Notice the shape on the chart - best speedups at small payloads, dropping at large. That is the opposite of JSON. The next slide explains why.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Why the Different Shape?</h3>
+  <table class="benchmark">
+    <tr><th></th><th>JSON</th><th>Avro</th></tr>
+    <tr><td>Parse cost / byte</td><td class="loser">High (text scanning)</td><td class="winner">Low (binary, schema-driven)</td></tr>
+    <tr><td>Sweet spot</td><td>Mid-range (5-25 KB)</td><td>Small (1-10 KB)</td></tr>
+    <tr><td>Drops off at</td><td>100 KB+</td><td>50 KB+</td></tr>
+  </table>
+  <p class="secondary" style="margin-top: 15px;">Speedup tracks <em>parse-to-overhead ratio</em>, not payload size alone.</p>
+
+  <aside class="notes">
+    Avro decode is much cheaper per byte - it is binary, schema-driven, no delimiter scanning.
+    With JSON, the parse cost dominates and grows with size - bigger payloads mean bigger wins.
+    With Avro, the parse is so cheap that Hash construction dominates at large sizes. That part is not parallelized.
+    The key lesson is that Ractor speedup tracks the ratio of expensive isolated work to fixed output construction. Different formats give you different ratios.
+  </aside>
+</section>
+
+<!-- ── Integration Benchmark Matrix (3 slides) ── -->
+
+<section style="font-size: 70%">
+  <h3>Ractors vs "Just Use More Threads"</h3>
+  <table class="benchmark">
+    <tr><th>Payload</th><th>Best of 5-10 threads</th><th>1 thread + 8 Ractors</th><th>Speedup</th></tr>
+    <tr>
+      <td>small (1.7 KB)</td>
+      <td>6,755 msg/s</td>
+      <td class="winner">15,049 msg/s</td>
+      <td class="winner">2.2x</td>
+    </tr>
+    <tr>
+      <td>medium (6 KB)</td>
+      <td>1,680 msg/s</td>
+      <td class="winner">9,553 msg/s</td>
+      <td class="winner">5.7x</td>
+    </tr>
+    <tr>
+      <td>large (64 KB)</td>
+      <td>188 msg/s</td>
+      <td class="winner">255 msg/s</td>
+      <td class="winner">1.4x</td>
+    </tr>
+    <tr>
+      <td>xlarge (163 KB)</td>
+      <td>47 msg/s</td>
+      <td class="winner">139 msg/s</td>
+      <td class="winner">3.0x</td>
+    </tr>
+  </table>
+  <p style="margin-top: 15px;"><span class="solution">1 thread + Ractors</span> beats <span class="problem">5-10 threads</span> at every size.</p>
+
+  <aside class="notes">
+    These are the two configurations Karafka users actually choose between - more threads, or one thread plus a Ractor pool.
+    Small payloads: 2.2x faster. Medium: 5.7x - the most dramatic. Large: 1.4x. Extra large: 3x.
+    In every row, one thread plus Ractors beats 5 to 10 threads. Adding threads to GVL-bound work actively hurts at large payloads.
+  </aside>
+</section>
+
+<section style="font-size: 60%">
+  <h3>The GVL Contention Trap: Threads + Ractors</h3>
+  <table class="benchmark">
+    <tr><th>Payload</th><th>R=4, c=1</th><th>R=4, c=5</th><th>R=4, c=10</th><th>Degradation</th></tr>
+    <tr>
+      <td>small (1.7 KB)</td>
+      <td class="winner">13,072</td>
+      <td>12,683</td>
+      <td>10,339</td>
+      <td>&minus;3% &rarr; &minus;21%</td>
+    </tr>
+    <tr>
+      <td>medium (6 KB)</td>
+      <td class="winner">3,826</td>
+      <td>1,495</td>
+      <td class="loser">1,665</td>
+      <td class="loser">&minus;61%</td>
+    </tr>
+    <tr>
+      <td>large (64 KB)</td>
+      <td class="winner">248</td>
+      <td class="loser">93</td>
+      <td class="loser">59</td>
+      <td class="loser">&minus;62% &rarr; &minus;76%</td>
+    </tr>
+  </table>
+  <p class="solution" style="margin-top: 15px;">Sweet spot: <code>concurrency=1</code> + Ractors.</p>
+
+  <aside class="notes">
+    The natural follow-up question - what if I add more threads on top of the Ractor pool? The answer is no, do not do that.
+    Small payloads: 3 to 21 percent degradation. Medium: 61 percent drop. Large: 62 to 76 percent drop.
+    Every thread contends on the coordinator and the GVL for dispatch bookkeeping. More threads multiplies contention.
+    My strong recommendation - set concurrency to 1 for Ractor-pool topics.
+  </aside>
+</section>
+
+<section style="font-size: 75%">
+  <h3>The Honest Takeaway</h3>
+  <p>Ractors: <span class="solution">1.4x - 5.7x faster</span> than adding threads.</p>
+  <p><span class="solution">1.35x - 1.75x faster</span> than sequential baseline.</p>
+  <p style="margin-top: 20px;" class="secondary">The GVL bottleneck is gone. Framework overhead remains - separate problem, separate fix.</p>
+
+  <aside class="notes">
+    Across all payload sizes we tested end-to-end, Ractors deliver 1.4x to 5.7x speedup over threads. Adding more threads without Ractors never helps - pure-Ruby CPU work serializes on the GVL.
+    The Ractor pool fixes exactly the GVL problem. Parsing moves out of the main VM. Each Ractor has its own GVL.
+    Framework overhead is still paid - that is separate optimization work. But the big win, removing GVL contention, is shipped.
+  </aside>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     ACT 4 - PRODUCTION & HONEST CLOSE (~5 min)
+     ═══════════════════════════════════════════════════════ -->
+
+<section data-transition="convex">
+  <h2>Production Concerns</h2>
+  <p class="secondary">The part skeptics care about</p>
+
+  <aside class="notes">
+    Now I want to switch from benchmarks to the questions skeptical engineers will ask. What about errors? What about gem compatibility? What is the cost for users who do not enable this? Let me address them directly.
+  </aside>
+</section>
+
+
+
+<section style="font-size: 70%">
+  <h3>Memory Overhead</h3>
+  <table class="benchmark">
+    <tr><th>Pool size</th><th>Idle &Delta;RSS</th><th>Active &Delta;RSS</th><th>Per worker</th></tr>
+    <tr><td>5 workers</td><td>~0.2 MB</td><td>~1.5 MB</td><td>~0.3 MB</td></tr>
+    <tr><td>10 workers</td><td>~0.3 MB</td><td>~3.0 MB</td><td>~0.3 MB</td></tr>
+    <tr><td>20 workers</td><td>~0.4 MB</td><td>~6.0 MB</td><td>~0.3 MB</td></tr>
+  </table>
+  <p style="margin-top: 15px;"><span class="solution">~0.3 MB per active worker.</span> Linear, not multiplicative.</p>
+  <p class="secondary">A Karafka consumer typically uses hundreds of MB. The pool is a rounding error.</p>
+
+  <aside class="notes">
+    "Is not every Ractor a whole new VM?" No - they share bytecode and constants. They get their own heap and stack, but those start tiny.
+    About 0.3 MB per active worker, linear. 20 workers is 6 MB. A typical Karafka process uses 200 to 400 MB - the pool is a rounding error.
+    Even 8 processes times 16 Ractors is still under 50 MB extra.
+  </aside>
+</section>
+
+
+
+<section style="font-size: 65%">
+  <h3>Ractor Compatibility</h3>
+  <table class="benchmark">
+    <tr><th>Library</th><th>Works?</th></tr>
+    <tr><td>JSON (stdlib)</td><td class="winner">YES</td></tr>
+    <tr><td>CSV (stdlib)</td><td class="winner">YES</td></tr>
+    <tr><td>YAML/Psych</td><td class="winner">YES</td></tr>
+    <tr><td>ERB (stdlib)</td><td class="winner">YES</td></tr>
+    <tr><td>MessagePack</td><td class="loser">NO - UnsafeError</td></tr>
+    <tr><td>Avro</td><td style="color: #893D24; font-weight: bold;">ALMOST - with patches</td></tr>
+    <tr><td>dry-validation</td><td class="loser">NO - Proc closures</td></tr>
+    <tr><td>json_schemer</td><td class="loser">NO - "not supported yet"</td></tr>
+  </table>
+  <p>Only stdlib is Ractor-safe today.</p>
+
+  <aside class="notes">
+    Here is the ecosystem reality check. Stdlib works - JSON, CSV, YAML, ERB - all out of the box.
+    MessagePack gives you an UnsafeError. Avro works with about 20 lines patched. dry-validation is blocked by Proc closures. json_schemer literally returns "not supported yet."
+    Stdlib is the safe path today. Third-party support is the number one barrier to wider adoption.
+  </aside>
+</section>
+
+<section style="font-size: 65%">
+  <h3>Cost for Non-Ractor Users?</h3>
+  <table class="benchmark">
+    <tr><th>Extra work per batch</th><th>Cost</th></tr>
+    <tr><td><code>parallel?</code> cached ivar check</td><td class="winner">~17 ns</td></tr>
+    <tr><td><code>Immediate#retrieve</code> &rarr; nil</td><td class="winner">~39 ns</td></tr>
+    <tr><td>BatchMetadata extra field</td><td class="winner">~0 ns</td></tr>
+    <tr><td style="font-weight: bold;">Total overhead per batch</td><td class="winner" style="font-weight: bold;">~56 ns</td></tr>
+  </table>
+  <p style="margin-top: 15px;"><span class="solution">0.075%</span> of a typical batch. Effectively zero.</p>
+
+  <aside class="notes">
+    The other big concern - am I paying for it if I do not use it?
+    Barely. 56 nanoseconds per batch total. A 100-message batch takes 74,000 nanoseconds to deserialize - that is 0.075 percent. Round it to zero.
+    Safe to ship as default. Non-Ractor users pay nothing meaningful.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Decision Table</h3>
+  <table class="benchmark">
+    <tr><th>Payload</th><th>Min messages to win</th></tr>
+    <tr><td>18KB+</td><td>25</td></tr>
+    <tr><td>5KB+</td><td>50</td></tr>
+    <tr><td>500B</td><td>100</td></tr>
+    <tr><td class="loser">&lt; 500B, &lt; 50 msgs</td><td class="loser">Don't bother</td></tr>
+  </table>
+
+  <aside class="notes">
+    Here is a quick-reference table - when does the pool actually pay off?
+    At 18KB and above, 25 messages per batch is enough to see gains. As payloads shrink, you need bigger batches to amortize coordination cost.
+    The bottom row is the negative case - tiny payloads in tiny batches, do not bother. The min_payloads config option enforces this automatically.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Enabling It</h3>
+  <pre><code class="ruby">Karafka::App.setup do |config|
+  config.deserializing.parallel.active = true
+  config.deserializing.parallel.concurrency = 4
+  config.deserializing.parallel.min_payloads = 50
+end</code></pre>
+  <p style="margin-top: 15px;">Per-topic opt-in:</p>
+  <pre><code class="ruby">topic :events do
+  deserializer MyDeserializer.new.freeze
+  deserializing(parallel: true)
+end</code></pre>
+
+  <aside class="notes">
+    This is what turning it on looks like.
+    At the top - app-level config. Three lines. Activate the pool, pick how many Ractors, set the min batch threshold.
+    At the bottom - per-topic opt-in. The deserializer must be frozen. Add deserializing parallel: true to the topic block.
+    That is it. No consumer code changes. message.payload still works exactly the same way.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Beyond Deserialization: ERB Templates</h3>
+  <p>ERB is <strong>100% pure Ruby</strong>.</p>
+  <p style="margin-top: 10px;">Threads: <span class="problem">GVL.</span> Ractors: <span class="solution">parallel.</span></p>
+
+  <aside class="notes">
+    Now let me pivot to a totally different domain. This pattern is not Kafka-specific. Anywhere you have pure-Ruby CPU work on independent inputs, it applies.
+    ERB is a great example. Template rendering is 100 percent Ruby - string interpolation, loops, conditionals. There is no C extension that releases the GVL. Threads literally cannot help.
+    One practical note - ERB.result with binding does not work inside Ractors. The workaround is ERB#def_method which compiles a template into a real instance method. That works perfectly.
+  </aside>
+</section>
+
+<section style="font-size: 65%">
+  <h3>ERB: 5 Complex Templates in Parallel</h3>
+  <table class="benchmark">
+    <tr><th>Approach</th><th>Time</th><th>vs Linear</th></tr>
+    <tr>
+      <td>Linear (sequential)</td>
+      <td>2.28 ms</td>
+      <td>1.00x</td>
+    </tr>
+    <tr>
+      <td>Thread pool (5 workers)</td>
+      <td>2.66 ms</td>
+      <td class="loser">0.86x (slower!)</td>
+    </tr>
+    <tr>
+      <td>Ractor pool (5 workers)</td>
+      <td class="winner">1.24 ms</td>
+      <td class="winner">1.84x</td>
+    </tr>
+  </table>
+  <p class="solution" style="margin-top: 10px;">Ractors <span class="solution">1.84x faster</span>. Threads make it <span class="problem">slower</span>.</p>
+
+  <aside class="notes">
+    Five real templates - a 35KB product page, 25KB dashboard, 8KB email, 68KB report, 60KB XML API response.
+    Linear baseline is 2.28 milliseconds.
+    Thread pool: 2.66 milliseconds - 14 percent slower than sequential. Threads add overhead and provide zero parallelism because of the GVL.
+    Ractor pool: 1.24 milliseconds - 1.84x faster. Frozen input hashes go in, frozen output strings come out.
+  </aside>
+</section>
+
+<section style="font-size: 65%">
+  <h3>ERB Scaling: N Report Templates</h3>
+  <table class="benchmark">
+    <tr><th>N</th><th>Linear</th><th>Threads (5w)</th><th>Ractors (5w)</th><th>Speedup</th></tr>
+    <tr>
+      <td>5</td>
+      <td>3.1 ms</td>
+      <td>3.3 ms</td>
+      <td class="winner">1.4 ms</td>
+      <td class="winner">2.16x</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>6.2 ms</td>
+      <td>6.6 ms</td>
+      <td class="winner">2.2 ms</td>
+      <td class="winner">2.82x</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>11.7 ms</td>
+      <td>12.9 ms</td>
+      <td class="winner">4.3 ms</td>
+      <td class="winner">2.69x</td>
+    </tr>
+    <tr>
+      <td>50</td>
+      <td>31.2 ms</td>
+      <td>33.8 ms</td>
+      <td class="winner">13.5 ms</td>
+      <td class="winner">2.32x</td>
+    </tr>
+  </table>
+  <p class="solution" style="margin-top: 10px;">2&ndash;3x. Threads never help.</p>
+
+  <aside class="notes">
+    Same 68KB report template rendered N times - simulating batch email generation, scheduled reports, page pre-rendering.
+    Look at the threads column - at every N, threads are slower than sequential. Always.
+    Ractors hold a 2 to 3x speedup at every scale, from 5 templates to 50.
+    You do not need to switch template engines. Just parallelize ERB with Ractors and you get 2 to 3x.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>The Pattern Generalizes</h3>
+  <ul>
+    <li>Template rendering (ERB, Haml, Slim)</li>
+    <li>Report generation</li>
+    <li>Data transformation pipelines</li>
+    <li>Batch email rendering</li>
+  </ul>
+  <p class="solution" style="margin-top: 15px;">Frozen in &rarr; Ractor &rarr; Frozen out</p>
+
+  <aside class="notes">
+    The pattern generalizes. Any work that is pure Ruby, operates on independent data items, and can freeze its input and output is a candidate for Ractor parallelism.
+    The list on the slide is not exhaustive. Anywhere you wish you could parallelize on threads but the GVL stops you - that is a Ractor candidate.
+    The mantra is simple - frozen in, Ractor, frozen out.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>But: I/O-Heavy Consumers</h3>
+  <ul>
+    <li>One 100ms DB call &rarr; deserialization is <span class="secondary">&lt;2%</span></li>
+    <li>Use threads/fibers there instead</li>
+  </ul>
+  <p class="secondary">Complementary, not competing.</p>
+
+  <aside class="notes">
+    Let me be honest about scope. If your consumer hits a database on every message, that I/O dominates everything.
+    A single 100 millisecond query makes deserialization less than 2 percent of total time. Speeding up 2 percent by 3x gives you 6 percent overall. Probably not worth the complexity.
+    For I/O-heavy consumers, use threads or fibers instead. These are complementary tools - Ractors fix CPU-bound, threads fix I/O-bound.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>When NOT to Use Ractors</h3>
+  <ul>
+    <li>Small batches (&lt; 50 msgs)</li>
+    <li>Tiny payloads (&lt; 500B)</li>
+    <li>I/O-heavy consumers</li>
+    <li>Non-stdlib deserializers</li>
+    <li>Mutation-heavy consumer code</li>
+  </ul>
+
+  <aside class="notes">
+    Let me also be clear about when not to use this.
+    Small batches - coordination overhead exceeds the gains. The min_payloads option handles this automatically.
+    Tiny payloads - the boundary crossing dominates. I/O-heavy consumers - covered on the previous slide.
+    Non-stdlib deserializers are not Ractor-safe yet. And if your code mutates parsed payloads everywhere, freeze: true will break it.
+  </aside>
+</section>
+
+<section style="font-size: 70%">
+  <h3>The One Slide Summary</h3>
+  <table class="benchmark">
+    <tr><th></th><th>Threads</th><th>Ractors</th></tr>
+    <tr><td>GVL</td><td class="loser">Blocked</td><td class="winner">Bypassed</td></tr>
+    <tr><td>Scaling (5 workers)</td><td>0.82x</td><td class="winner">2.5x</td></tr>
+    <tr><td>Scaling (8 workers)</td><td>0.81x</td><td class="winner">3.17x</td></tr>
+    <tr><td>Memory overhead</td><td>~0</td><td>~1.5 MB</td></tr>
+    <tr><td>Error recovery</td><td>Same</td><td>Same (~6%)</td></tr>
+    <tr><td>Ecosystem</td><td class="winner">Everything works</td><td class="loser">Stdlib only (today)</td></tr>
+  </table>
+
+  <aside class="notes">
+    Here is the honest comparison on one slide.
+    GVL - threads are blocked, Ractors bypass it. Fundamental difference.
+    Scaling at 5 and 8 workers - threads stuck under 1x, Ractors at 2.5x and 3.17x.
+    Memory - about 1.5 MB per Ractor. Real but trivial for any production process.
+    Error recovery works the same way either way.
+    Ecosystem - this is where threads still win. Everything works on threads. Ractors only safely run stdlib today.
+    If someone asks "should I use Ractors?" - the technical answer is yes. The practical answer depends on whether your dependencies cooperate.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h2>What's Next</h2>
+  <ul>
+    <li>Karafka ships this as opt-in</li>
+    <li>Exploring lazy result consumption for better overlap</li>
+    <li>Making Avro, MessagePack Ractor-safe</li>
+    <li>Gem authors: make just your hot path Ractor-safe</li>
+  </ul>
+
+  <aside class="notes">
+    Here is what is next.
+    Karafka already ships the parallel deserialization pool as opt-in. It is in the latest release, anyone can try it today.
+    I am also exploring lazy result consumption - starting to use partial results before the full batch finishes.
+    I am working on patches for Avro, MessagePack, and others to make them Ractor-safe.
+    And here is my direct ask to gem authors in the room - you do not have to make your entire library Ractor-safe. Just the hot path. The one operation users will want to parallelize. That is the unlock for the rest of the ecosystem.
+  </aside>
+</section>
+
+<section data-transition="fade">
+  <h2>The Takeaway</h2>
+  <p>Ractors work. <strong>Today.</strong></p>
+  <p class="fragment fade-in" style="margin-top: 20px;">Frozen in &rarr; Ractor &rarr; Frozen out.</p>
+
+  <aside class="notes">
+    Ractors work today. For the right workload, not someday.
+    You do not need a Ractor-safe app. You need Ractor-safe building blocks.
+    The whole pattern in five words - frozen in, Ractor, frozen out.
+  </aside>
+</section>
+
+<section style="font-size: 80%">
+  <h3>Where to Find This</h3>
+  <table class="benchmark">
+    <tr><th></th><th></th></tr>
+    <tr><td>Karafka</td><td><code>karafka</code> gem &ge; 2.5</td></tr>
+    <tr><td>Source</td><td><code>github.com/karafka/karafka</code></td></tr>
+    <tr><td>JSON <code>freeze: true</code></td><td><code>json</code> gem &ge; 2.7</td></tr>
+    <tr><td><code>Ractor::Port</code></td><td>Ruby 4.0+</td></tr>
+  </table>
+
+  <aside class="notes">
+    Here is everything you need to try this yourself.
+    The parallel pool ships in Karafka 2.5 and later as opt-in.
+    JSON freeze: true needs the json gem 2.7 or newer. Ractor::Port requires Ruby 4.0 or later.
+    All the benchmark code lives in the rubykaigi folder of the Karafka repo - anyone can re-run it.
+  </aside>
+</section>
+
+<section style="font-size: 85%">
+  <h3>Thanks</h3>
+  <ul>
+    <li>Jean Boussier</li>
+    <li>Luke Gruber</li>
+    <li>John Hawthorn</li>
+    <li>Aaron Patterson</li>
+    <li>Koichi Sasada</li>
+    <li>Peter Zhu</li>
+    <li>The Ruby core team</li>
+    <li>Karafka supporters</li>
+  </ul>
+  <p class="secondary" style="margin-top: 25px;">None of this exists without their work.</p>
+
+  <aside class="notes">
+    I want to sincerely thank these people. None of this work exists without them.
+    Koichi for the entire Ractor design and Ractor::Port. Jean for JSON.parse freeze: true and stability fixes. John for the Port internals. Peter for fixing deadlocks and memory leaks. Luke for fixing concurrency bugs. Aaron for the hallway conversations at RubyKaigi 2025.
+    Thank you to the Ruby core team and to all the Karafka supporters who tested early versions.
+  </aside>
+</section>
+
+<section data-transition="fade">
+  <h2>Talk to Me About</h2>
+  <ul>
+    <li>Karafka, Kafka, Ruby, Ractors</li>
+    <li>Stream processing at scale</li>
+    <li>Making your gems Ractor-safe</li>
+  </ul>
+
+  <aside class="notes">
+    If you are working on Karafka, stream processing, or running into CPU-parallelism walls in Ruby - come talk to me.
+    Especially if you are a gem author who wants help making your library Ractor-safe. That is how the ecosystem grows.
+    Find me in the hallway, at the after-party, anywhere.
+  </aside>
+</section>
+
+<section>
+  <h2>THX</h2>
+  <p>@maciejmensfeld</p>
+  <p>github.com/karafka</p>
+  <p>github.com/mensfeld</p>
+  <img src="assets/pr.svg" alt="QR code to Ractor PR" style="max-width: 200px; margin-top: 15px; box-shadow: none; background: white; padding: 8px; border-radius: 4px;">
+
+  <aside class="notes">
+    Thank you everyone. You can find all my projects at github.com/karafka and github.com/mensfeld. I am happy to take questions.
+  </aside>
+</section>
+
+    </div>
+  </div>
+
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      autoAnimateDuration: 0.8,
+      autoAnimateEasing: 'ease-out',
+      autoAnimate: true,
+      backgroundTransition: 'fade',
+      plugins: [ RevealHighlight, RevealNotes ],
+      highlightConfig: {
+        tabReplace: '  ',
+        lineNumbers: true,
+        highlightOnLoad: true
+      }
+    });
+
+    // Theme toggle
+    function toggleTheme() {
+      var html = document.documentElement;
+      var isDark = html.getAttribute('data-theme') === 'dark';
+      var next = isDark ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('slide-theme', next);
+      document.getElementById('theme-toggle').textContent = isDark ? '\u263E' : '\u2600';
+    }
+
+    // Restore saved theme
+    var saved = localStorage.getItem('slide-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+
+    // Toggle button
+    var btn = document.createElement('button');
+    btn.id = 'theme-toggle';
+    btn.textContent = saved === 'dark' ? '\u2600' : '\u263E';
+    btn.onclick = toggleTheme;
+    document.body.appendChild(btn);
+
+    // Keyboard shortcut: D
+    document.addEventListener('keydown', function(e) {
+      if ((e.key === 'd' || e.key === 'D') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        toggleTheme();
+      }
+    });
+  </script>
+</body>
+</html>
